@@ -335,11 +335,11 @@ function renderEnergy() {
   const usable = canUseEnergy();
   bar.classList.toggle('usable', usable);
   const tip = $('energyTip');
-  let text = `能量 ${state.energy}/${max}`;
+  let text = `能量 ${state.energy}/${max} · 每黑方落子 +1`;
   if (myColor === WHITE && state.turn === WHITE) {
-    if (state.extraMoves > 0) text += ' · 额外落子待用';
-    else if (state.extraUsed) text += ' · 本回合已使用';
-    else if (state.energy >= state.energyCost) text += ` · 点击消耗 ${state.energyCost} 格`;
+    if (state.extraMoves > 0) text = `能量 ${state.energy}/${max} · 额外落子待用`;
+    else if (state.extraUsed) text = `能量 ${state.energy}/${max} · 本回合已使用`;
+    else if (state.energy >= state.energyCost) text = `能量 ${state.energy}/${max} · 点击消耗 ${state.energyCost} 格`;
   }
   tip.textContent = text;
   tip.classList.toggle('active', usable || (myColor === WHITE && state.extraMoves > 0));

@@ -9,7 +9,7 @@ const CAPTURE_TARGET = 10; // 白方获胜所需提掉的黑子数（目）
 // 白方能量系统：共 10 格
 const ENERGY_MAX = 10;          // 能量上限（格数）
 const ENERGY_COST = 5;          // 使用一次额外落子的消耗
-const ENERGY_PER_MOVE = 1;      // 白方每落一子获得的能量
+const ENERGY_PER_BLACK_MOVE = 1; // 黑方每落一子，白方获得 1 格能量
 const ENERGY_PER_FIVE = 5;      // 白方连成五子额外获得的能量
 
 function createBoard() {
@@ -111,14 +111,13 @@ function applyMove(state, color, x, y) {
   if (color === WHITE) state.capturesByWhite += captured.length;
   else state.capturesByBlack += captured.length;
 
-  // 白方能量累积：每落一子 +1，连成五子再 +5
+  // 白方能量累积：黑方每落一子 +1；白方自身落子不加，连成五子额外 +5
   let fiveBonus = false;
-  if (color === WHITE) {
-    state.energy = Math.min(ENERGY_MAX, (state.energy || 0) + ENERGY_PER_MOVE);
-    if (checkFive(board, x, y, WHITE)) {
-      fiveBonus = true;
-      state.energy = Math.min(ENERGY_MAX, state.energy + ENERGY_PER_FIVE);
-    }
+  if (color === BLACK) {
+    state.energy = Math.min(ENERGY_MAX, (state.energy || 0) + ENERGY_PER_BLACK_MOVE);
+  } else if (checkFive(board, x, y, WHITE)) {
+    fiveBonus = true;
+    state.energy = Math.min(ENERGY_MAX, (state.energy || 0) + ENERGY_PER_FIVE);
   }
 
   // 胜负判定
@@ -168,6 +167,6 @@ function useEnergy(state, color) {
 
 module.exports = {
   SIZE, EMPTY, BLACK, WHITE, CAPTURE_TARGET,
-  ENERGY_MAX, ENERGY_COST, ENERGY_PER_MOVE, ENERGY_PER_FIVE,
+  ENERGY_MAX, ENERGY_COST, ENERGY_PER_BLACK_MOVE, ENERGY_PER_FIVE,
   createBoard, applyMove, useEnergy, opponent
 };
