@@ -1,10 +1,13 @@
 {
   "name": "gomoku-vs-go",
   "version": "1.0.0",
-  "description": "五子棋对围棋 - 双人联机对战（黑方五子棋 vs 白方围棋）",
+  "description": "五子棋对围棋 - 规则模块化（本地双人）；legacy/ 保留原联机实现",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "start:next": "node next/build/serve.mjs",
+    "build:single": "node next/build/build-single.mjs",
+    "test:rules": "node next/tests/run-tests.mjs"
   },
   "dependencies": {
     "express": "^4.19.2",

@@ -1,0 +1,2552 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>五子棋对围棋 · 规则模块版</title>
+<style>
+/* 五子棋对围棋 · 规则模块版 */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #171310;
+  --bg2: #1e1813;
+  --card: #251f19;
+  --card2: #2e2721;
+  --line: #443a2e;
+  --line2: #56483a;
+  --text: #f1e8d8;
+  --dim: #a99a84;
+  --faint: #7d7060;
+  --accent: #e2a95c;
+  --accent2: #c47f38;
+  --danger: #cc5a45;
+  --ok: #7fb37a;
+  --black: #101010;
+  --white: #efe9dc;
+}
+
+html, body { height: 100%; }
+
+body {
+  font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+  background:
+    radial-gradient(1200px 600px at 50% -10%, rgba(226,169,92,.10), transparent 60%),
+    radial-gradient(900px 500px at 10% 110%, rgba(127,90,50,.12), transparent 60%),
+    var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+.hidden { display: none !important; }
+
+/* ---------- 通用控件 ---------- */
+.btn {
+  background: var(--card2);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 8px 16px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: border-color .15s, color .15s, background .15s;
+  font-family: inherit;
+}
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+.btn.primary { background: linear-gradient(180deg, var(--accent), var(--accent2)); border-color: var(--accent2); color: #221703; font-weight: bold; }
+.btn.primary:hover { filter: brightness(1.06); color: #221703; }
+.btn.big { padding: 13px 30px; font-size: 16px; border-radius: 11px; }
+.btn.small { padding: 5px 12px; font-size: 12.5px; }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+
+input[type="number"], input[type="text"], select, textarea {
+  background: var(--bg2);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  color: var(--text);
+  padding: 6px 9px;
+  font-size: 13px;
+  outline: none;
+  font-family: inherit;
+}
+input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+
+/* ---------- 设置页 ---------- */
+.screen { min-height: 100vh; }
+
+.hero { text-align: center; padding: 30px 20px 8px; }
+.hero-title { font-size: 34px; letter-spacing: 6px; font-weight: bold; }
+.hero-title .vs { color: var(--accent); font-size: 22px; letter-spacing: 0; margin: 0 6px; }
+.hero-sub { color: var(--dim); font-size: 13px; margin-top: 8px; letter-spacing: 1px; }
+
+.setup-grid {
+  max-width: 1400px;
+  margin: 18px auto 0;
+  padding: 0 20px 20px;
+  display: grid;
+  grid-template-columns: 290px minmax(0, 1fr) 340px;
+  grid-template-rows: auto auto;
+  gap: 16px;
+  align-items: start;
+}
+.panel-templates { grid-column: 1; grid-row: 1; }
+.panel-preview { grid-column: 1; grid-row: 2; }
+.panel-mods { grid-column: 2; grid-row: 1 / span 2; }
+.panel-config { grid-column: 3; grid-row: 1 / span 2; }
+
+.panel {
+  background: linear-gradient(180deg, rgba(255,255,255,.02), transparent 40%), var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.25);
+  min-width: 0;
+}
+.panel h2 { font-size: 15px; letter-spacing: 1px; margin-bottom: 6px; color: var(--text); }
+.panel .note { font-size: 12px; color: var(--faint); line-height: 1.6; margin-bottom: 12px; }
+.panel .note b { color: var(--accent); }
+
+.template-list { display: flex; flex-direction: column; gap: 8px; }
+.tpl-card {
+  text-align: left;
+  background: var(--bg2);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: var(--text);
+  cursor: pointer;
+  transition: all .15s;
+  font-family: inherit;
+}
+.tpl-card:hover { border-color: var(--accent2); transform: translateY(-1px); }
+.tpl-card.active { border-color: var(--accent); background: rgba(226,169,92,.10); box-shadow: 0 0 0 1px rgba(226,169,92,.35) inset; }
+.tpl-name { font-size: 13.5px; font-weight: bold; }
+.tpl-desc { font-size: 11.5px; color: var(--dim); margin-top: 3px; }
+
+.mod-list { display: flex; flex-direction: column; gap: 14px; max-height: 68vh; overflow: auto; padding-right: 4px; }
+.mod-group { display: flex; flex-direction: column; gap: 8px; }
+.mod-group-title { font-size: 12px; letter-spacing: 2px; color: var(--faint); padding: 2px 2px 0; border-left: 3px solid var(--accent2); padding-left: 8px; }
+.mod-card { background: var(--bg2); border: 1px solid var(--line); border-radius: 10px; padding: 9px 10px; }
+.mod-card.disabled { opacity: .62; }
+.mod-head { display: flex; align-items: flex-start; gap: 10px; }
+.mod-title { flex: 1; }
+.mod-name { font-size: 13px; font-weight: bold; }
+.mod-name code { font-size: 10px; color: var(--faint); font-family: Consolas, monospace; }
+.mod-desc { font-size: 11px; color: var(--faint); margin-top: 2px; line-height: 1.5; }
+.mod-body { margin-top: 9px; padding-top: 9px; border-top: 1px dashed var(--line); display: flex; flex-direction: column; gap: 6px; }
+.ctl-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.ctl-row > span { font-size: 11.5px; color: var(--dim); }
+.ctl-row select, .ctl-row input { width: 118px; padding: 4px 6px; font-size: 12px; }
+.ctl-static { font-size: 11.5px; color: var(--faint); }
+.mod-note { font-size: 11px; color: #d8a35e; background: rgba(226,169,92,.07); border: 1px dashed var(--line2); border-radius: 6px; padding: 5px 7px; line-height: 1.5; }
+
+.switch { position: relative; width: 34px; height: 18px; flex: 0 0 auto; margin-top: 2px; cursor: pointer; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.switch span {
+  position: absolute; inset: 0; background: #3a3129; border-radius: 999px;
+  transition: background .15s; border: 1px solid var(--line);
+}
+.switch span::after {
+  content: ""; position: absolute; top: 2px; left: 2px; width: 12px; height: 12px;
+  border-radius: 50%; background: #9b8c78; transition: transform .15s, background .15s;
+}
+.switch input:checked + span { background: rgba(226,169,92,.25); border-color: var(--accent2); }
+.switch input:checked + span::after { transform: translateX(16px); background: var(--accent); }
+
+.rule-tools { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+#configText {
+  width: 100%;
+  height: 360px;
+  resize: vertical;
+  font-family: Consolas, "Cascadia Mono", monospace;
+  font-size: 12.5px;
+  line-height: 1.62;
+  padding: 12px 14px;
+  background: #16120f;
+  color: #e9dfcf;
+  border-radius: 10px;
+  tab-size: 2;
+}
+.errors { margin-top: 8px; border: 1px solid rgba(204,90,69,.5); background: rgba(204,90,69,.08); border-radius: 8px; padding: 8px 10px; }
+.error-row { font-size: 11.5px; color: #e9a293; line-height: 1.7; }
+
+.cfg-help { margin-top: 10px; }
+.cfg-help summary { font-size: 12px; color: var(--dim); cursor: pointer; }
+.cfg-help pre {
+  margin-top: 8px; padding: 10px; background: #16120f; border: 1px solid var(--line);
+  border-radius: 8px; font-size: 11.5px; color: #cdbfa9; overflow: auto; line-height: 1.6;
+  font-family: Consolas, monospace;
+}
+
+/* ---------- 能量预览 ---------- */
+.preview { display: flex; flex-direction: column; gap: 10px; }
+.preview-title { font-size: 11px; color: var(--faint); letter-spacing: 1px; }
+.preview-body { display: flex; flex-direction: column; gap: 10px; }
+.preview-side { background: var(--bg2); border: 1px solid var(--line); border-radius: 9px; padding: 8px 10px; display: flex; flex-direction: column; gap: 5px; }
+.preview-side-name { font-size: 12px; font-weight: bold; }
+.preview-deps { font-size: 11px; color: var(--dim); line-height: 1.6; }
+.energy-empty { font-size: 11.5px; color: var(--faint); background: var(--bg2); border: 1px dashed var(--line); border-radius: 8px; padding: 8px 10px; line-height: 1.6; }
+
+.legend { display: flex; gap: 14px; margin-top: 14px; font-size: 11.5px; color: var(--faint); }
+.legend span { display: flex; align-items: center; gap: 5px; }
+.dot { width: 11px; height: 11px; border-radius: 50%; display: inline-block; }
+.dot.black { background: radial-gradient(circle at 32% 30%, #666, #0b0b0b 75%); }
+.dot.white { background: radial-gradient(circle at 32% 30%, #fff, #c8c2b4 80%); }
+
+.setup-footer {
+  max-width: 1400px; margin: 0 auto; padding: 4px 20px 34px;
+  display: flex; align-items: center; justify-content: flex-end; gap: 16px;
+}
+.setup-footer .hint { font-size: 12px; color: var(--faint); }
+
+/* ---------- 动作栏 ---------- */
+.action-bar {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  max-width: 1120px; margin: 2px auto 0; padding: 0 18px; width: 100%;
+}
+.action-bar-label { font-size: 11px; color: var(--faint); letter-spacing: 2px; flex: 0 0 auto; }
+.action-bar-btns { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.action-btn { background: rgba(226,169,92,.10); border-color: var(--accent2); color: var(--accent); }
+.action-btn:disabled { opacity: .38; }
+.action-hint { font-size: 11.5px; color: var(--faint); }
+
+/* ---------- 对局页 ---------- */
+#screenGame { display: flex; flex-direction: column; min-height: 100vh; }
+
+.topbar {
+  display: flex; align-items: center; gap: 14px;
+  padding: 10px 18px; background: rgba(30,24,19,.92);
+  border-bottom: 1px solid var(--line); backdrop-filter: blur(6px);
+}
+.status { flex: 1; text-align: center; font-size: 14.5px; color: var(--dim); }
+.status.my-turn { color: var(--accent); font-weight: bold; }
+.status.ended { color: var(--accent); font-weight: bold; }
+
+.game-main {
+  flex: 1; display: flex; align-items: flex-start; justify-content: center;
+  gap: 18px; padding: 16px 18px 8px; flex-wrap: nowrap;
+}
+
+.side-panel {
+  width: 176px; flex: 0 0 auto; margin-top: 6px;
+  background: var(--card); border: 1px solid var(--line); border-radius: 13px;
+  padding: 14px 13px; display: flex; flex-direction: column; gap: 9px;
+  transition: box-shadow .2s, border-color .2s;
+}
+.side-panel.active { border-color: var(--accent); box-shadow: 0 0 22px rgba(226,169,92,.18); }
+.side-panel .sp-head { display: flex; align-items: center; gap: 8px; font-size: 14.5px; font-weight: bold; }
+.side-panel .sp-head .dot { width: 22px; height: 22px; }
+.side-panel .kv { display: flex; justify-content: space-between; font-size: 12px; color: var(--dim); }
+.side-panel .kv b { color: var(--accent); font-size: 13px; }
+.energy-row { display: flex; flex-direction: column; gap: 4px; }
+.energy-cells { display: grid; grid-template-columns: repeat(10, 1fr); gap: 2px; }
+.energy-cell { height: 9px; border-radius: 2px; background: #3a3129; }
+.energy-cell.on { background: linear-gradient(180deg, #ffe3ab, var(--accent) 65%, var(--accent2)); }
+
+.board-wrap {
+  position: relative;
+  flex: 1 1 460px;
+  max-width: 680px;
+  min-width: 300px;
+  display: flex;
+  justify-content: center;
+}
+#board {
+  display: block; border-radius: 10px; cursor: crosshair;
+  box-shadow: 0 16px 46px rgba(0,0,0,.55);
+}
+#board.locked { cursor: default; }
+
+.overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; border-radius: 10px; background: rgba(18,13,9,.68); backdrop-filter: blur(2px); }
+.overlay-card { background: var(--card); border: 1px solid var(--accent); border-radius: 14px; padding: 26px 34px; text-align: center; box-shadow: 0 16px 50px rgba(0,0,0,.6); }
+.result-text { font-size: 23px; font-weight: bold; color: var(--accent); }
+.result-reason { font-size: 12.5px; color: var(--dim); margin-top: 7px; }
+.overlay-actions { display: flex; gap: 10px; justify-content: center; margin-top: 18px; }
+
+.dyn-bar { display: flex; align-items: center; gap: 12px; max-width: 1120px; margin: 4px auto 0; padding: 0 18px; width: 100%; }
+.dyn-bar-label { font-size: 11px; color: var(--faint); letter-spacing: 2px; flex: 0 0 auto; }
+
+.log-panel { max-width: 1120px; margin: 10px auto 22px; width: 100%; padding: 0 18px; }
+.log-title { font-size: 11px; color: var(--faint); letter-spacing: 2px; margin-bottom: 6px; }
+.log-list { list-style: none; display: flex; flex-direction: column; gap: 3px; max-height: 120px; overflow: auto; padding-right: 6px; }
+.log-list li { font-size: 11.5px; color: var(--faint); line-height: 1.5; }
+.log-list li.capture { color: #d5b48a; }
+.log-list li.energy { color: #a9c79b; }
+.log-list li.action { color: var(--accent); }
+.log-list li.end { color: var(--danger); }
+.log-list li.warn { color: #e08472; }
+.log-list li.rule { color: #9b8d78; }
+
+/* ---------- Toast ---------- */
+.toast {
+  position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+  background: var(--card2); border: 1px solid var(--accent); color: var(--text);
+  padding: 10px 20px; border-radius: 10px; font-size: 13.5px; z-index: 99;
+  box-shadow: 0 8px 28px rgba(0,0,0,.5); animation: toastIn .18s ease;
+}
+@keyframes toastIn { from { opacity: 0; transform: translate(-50%, -8px); } to { opacity: 1; transform: translate(-50%, 0); } }
+
+/* ---------- 响应式 ---------- */
+@media (max-width: 1180px) {
+  .setup-grid { grid-template-columns: 1fr 1fr; grid-template-rows: auto auto auto; }
+  .panel-templates { grid-column: 1; grid-row: 1; }
+  .panel-preview { grid-column: 2; grid-row: 1; }
+  .panel-mods { grid-column: 1; grid-row: 2; }
+  .panel-config { grid-column: 2; grid-row: 2; }
+  .mod-list { max-height: 420px; }
+}
+
+@media (max-width: 900px) {
+  .setup-grid { grid-template-columns: 1fr; }
+  .panel-templates, .panel-preview, .panel-mods, .panel-config { grid-column: 1; grid-row: auto; }
+  .game-main { flex-direction: column-reverse; align-items: center; gap: 10px; }
+  .side-panel { width: min(100%, 480px); margin-top: 0; flex-direction: row; flex-wrap: wrap; gap: 12px; align-items: center; }
+  .side-panel .sp-head { flex: 1 0 100%; }
+  .side-panel .kv { min-width: 80px; }
+  .board-wrap { width: 100%; flex-basis: auto; }
+  .action-bar { flex-direction: column; align-items: flex-start; gap: 6px; }
+  .log-panel { margin-top: 4px; }
+}
+
+</style>
+</head>
+<body>
+
+<!-- ========== 设置页 ========== -->
+<div id="screenSetup" class="screen">
+  <header class="hero">
+    <div class="hero-title">五子棋 <span class="vs">对</span> 围棋</div>
+    <div class="hero-sub">规则即模块 · 纯配置（规则 + 参数）· 本地双人</div>
+  </header>
+
+  <main class="setup-grid">
+    <section class="panel panel-templates">
+      <h2>规则模板</h2>
+      <p class="note">选模板即载入一份配置；配置也可导入/导出为纯文本。</p>
+      <div id="templateList" class="template-list"></div>
+      <p class="note tpl-extend">扩展模板：在 <code>next/templates/</code> 新增一个 <code>.js</code>（调用 <code>GVR.registerTemplate</code>），
+        在 <code>index.html</code> 引入后 <code>npm run build:single</code> 会自动内联。</p>
+    </section>
+
+    <section class="panel panel-preview">
+      <h2>能量条实时预览</h2>
+      <p class="note">随「能量」规则的开关、归属方与参数联动。</p>
+      <div id="energyPreview" class="preview"></div>
+      <div class="legend">
+        <span><i class="dot black"></i>黑方</span>
+        <span><i class="dot white"></i>白方</span>
+      </div>
+    </section>
+
+    <section class="panel panel-mods">
+      <h2>规则设置</h2>
+      <p class="note">每条规则一个模组：开关 / 归属方 / 参数。修改<b>立即写入配置</b>，<b>开局或点击「重开」后生效</b>。</p>
+      <div id="modList" class="mod-list"></div>
+    </section>
+
+    <section class="panel panel-config">
+      <h2>配置文本</h2>
+      <p class="note">纯文本只描述规则与参数，不含语句；编辑后自动重新解析。</p>
+      <div class="rule-tools">
+        <button id="importBtn" type="button" class="btn small">导入配置</button>
+        <input type="file" id="fileInput" accept=".rules,.txt,.cfg,.json,.rule" hidden>
+        <button id="exportBtn" type="button" class="btn small">导出文本</button>
+        <button id="resetBtn" type="button" class="btn small">恢复默认模板</button>
+      </div>
+      <textarea id="configText" spellcheck="false" autocomplete="off"></textarea>
+      <div id="parseErrors" class="errors hidden"></div>
+      <details class="cfg-help">
+        <summary>配置格式速查</summary>
+        <pre>board = 15
+mod chain on owner=双方 n=5 dirs=横竖斜 mode=至少
+mod go on owner=双方 suicide=禁入
+mod energy on owner=白 init=0 min=0 max=10
+mod gain on owner=白 amount=1
+mod combo on owner=白 cost=5 extra=1 perTurn=1
+mod move on owner=白 cost=3
+mod win on owner=双方 captureTarget=0
+
+# 取值：owner=双方|黑|白；dirs=横竖斜|仅横竖|仅斜线
+# mode=至少|恰好；suicide=禁入|允许；off 表示关闭该规则</pre>
+      </details>
+    </section>
+  </main>
+
+  <footer class="setup-footer">
+    <div id="setupHint" class="hint"></div>
+    <button id="startBtn" type="button" class="btn primary big" disabled>开始对局（本地双人）</button>
+  </footer>
+</div>
+
+<!-- ========== 对局页 ========== -->
+<div id="screenGame" class="screen hidden">
+  <header class="topbar">
+    <button id="backBtn" type="button" class="btn small">← 设置</button>
+    <div id="statusText" class="status"></div>
+    <button id="restartBtn" type="button" class="btn small">重开</button>
+  </header>
+
+  <main class="game-main">
+    <aside id="blackPanel" class="side-panel black"></aside>
+    <div class="board-wrap">
+      <canvas id="board"></canvas>
+      <div id="overlay" class="overlay hidden">
+        <div class="overlay-card">
+          <div id="resultText" class="result-text"></div>
+          <div id="resultReason" class="result-reason"></div>
+          <div class="overlay-actions">
+            <button id="againBtn" type="button" class="btn primary">再来一局</button>
+            <button id="overlayBackBtn" type="button" class="btn">返回设置</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <aside id="whitePanel" class="side-panel white"></aside>
+  </main>
+
+  <section class="action-bar">
+    <div class="action-bar-label">当前方动作</div>
+    <div id="actionBar" class="action-bar-btns"></div>
+  </section>
+
+  <section class="log-panel">
+    <div class="log-title">规则日志</div>
+    <ul id="logList" class="log-list"></ul>
+  </section>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script>
+/* ---- src/core/board.js ---- */
+/* 棋盘几何：落子、气/提子、连珠扫描（纯函数，不依赖对局状态） */
+(function (root) {
+  'use strict';
+  const GVR = root.GVR || (root.GVR = {});
+
+  const EMPTY = 0, BLACK = 1, WHITE = 2;
+  const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+  const LINES = [[1, 0], [0, 1], [1, 1], [1, -1]];
+  const DIR_SETS = {
+    all: LINES,
+    line: [[1, 0], [0, 1]],
+    diag: [[1, 1], [1, -1]]
+  };
+
+  function create(size) {
+    return Array.from({ length: size }, () => new Array(size).fill(EMPTY));
+  }
+
+  function inBounds(size, x, y) {
+    return x >= 0 && y >= 0 && x < size && y < size;
+  }
+
+  function opponent(color) {
+    return color === BLACK ? WHITE : BLACK;
+  }
+
+  function colorName(color) {
+    return color === BLACK ? '黑' : color === WHITE ? '白' : '—';
+  }
+
+  /** 沿 (dx,dy) 双向扫描同色连子，cells 从负方向到正方向 */
+  function lineRun(board, size, x, y, color, dx, dy) {
+    const neg = [], pos = [];
+    for (const s of [-1, 1]) {
+      let nx = x + dx * s, ny = y + dy * s;
+      while (inBounds(size, nx, ny) && board[ny][nx] === color) {
+        (s < 0 ? neg : pos).push([nx, ny]);
+        nx += dx * s; ny += dy * s;
+      }
+    }
+    const cells = neg.reverse().concat([[x, y]], pos);
+    return { length: cells.length, cells };
+  }
+
+  /**
+   * 判断 (x,y) 处是否形成 n 连珠。
+   * dirs: all | line | diag；mode: atLeast（≥n）| exact（恰好 n）
+   */
+  function chainInfo(board, size, x, y, color, n, dirs, mode) {
+    const set = DIR_SETS[dirs] || DIR_SETS.all;
+    for (const [dx, dy] of set) {
+      const run = lineRun(board, size, x, y, color, dx, dy);
+      if (mode === 'exact' ? run.length === n : run.length >= n) {
+        return { ok: true, cells: run.cells, length: run.length, dir: [dx, dy] };
+      }
+    }
+    return { ok: false, cells: [], length: 0, dir: null };
+  }
+
+  /** (x,y) 处棋块：{color, stones, liberties, libertyPoints} */
+  function groupAt(board, size, x, y) {
+    if (!inBounds(size, x, y)) return null;
+    const color = board[y][x];
+    if (color === EMPTY) return null;
+    const stack = [[x, y]];
+    const seen = new Set([x + ',' + y]);
+    const stones = [];
+    const libertyPoints = [];
+    const libertySeen = new Set();
+    while (stack.length) {
+      const [cx, cy] = stack.pop();
+      stones.push([cx, cy]);
+      for (const [dx, dy] of DIRS) {
+        const nx = cx + dx, ny = cy + dy;
+        if (!inBounds(size, nx, ny)) continue;
+        const v = board[ny][nx];
+        if (v === EMPTY) {
+          const k = nx + ',' + ny;
+          if (!libertySeen.has(k)) { libertySeen.add(k); libertyPoints.push([nx, ny]); }
+        } else if (v === color) {
+          const k = nx + ',' + ny;
+          if (!seen.has(k)) { seen.add(k); stack.push([nx, ny]); }
+        }
+      }
+    }
+    return { color, stones, liberties: libertyPoints.length, libertyPoints };
+  }
+
+  /** 落子后因无气应被提走的对方棋块（不修改棋盘） */
+  function findDeadGroups(board, size, x, y, color) {
+    const opp = opponent(color);
+    const out = [];
+    const checked = new Set();
+    for (const [dx, dy] of DIRS) {
+      const nx = x + dx, ny = y + dy;
+      if (!inBounds(size, nx, ny) || board[ny][nx] !== opp) continue;
+      const key = nx + ',' + ny;
+      if (checked.has(key)) continue;
+      const g = groupAt(board, size, nx, ny);
+      g.stones.forEach(([sx, sy]) => checked.add(sx + ',' + sy));
+      if (g.liberties === 0) out.push(g);
+    }
+    return out;
+  }
+
+  GVR.Board = {
+    EMPTY, BLACK, WHITE, DIRS, LINES, DIR_SETS,
+    create, inBounds, opponent, colorName,
+    lineRun, chainInfo, groupAt, findDeadGroups
+  };
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/* ---- src/core/state.js ---- */
+/* 对局状态：棋盘、回合、每方状态（按方隔离）、日志 */
+(function (root) {
+  'use strict';
+  const GVR = root.GVR || (root.GVR = {});
+  const B = GVR.Board;
+
+  const SIDE_KEY = { 1: 'black', 2: 'white' };
+  const SIDE_FROM_KEY = { black: 1, white: 2 };
+  const SIDE_NAME = { 1: '黑方', 2: '白方' };
+
+  function emptySide() {
+    return {
+      energy: 0, energyMin: 0, energyMax: 0,   // 能量 mod 写入
+      captures: 0,                             // 围棋 mod 写入
+      chainLen: 0,                             // 连珠 mod 写入
+      combos: 0                                // 连打 mod 写入
+    };
+  }
+
+  function create(size) {
+    return {
+      size,
+      board: B.create(size),
+      turn: B.BLACK,
+      ended: false,
+      winner: null,
+      winReason: '',
+      winLine: null,
+      lastMove: null,
+      moves: [],
+      extraMoves: 0,      // 本回合剩余额外落子数（连打写入）
+      turnActions: 0,
+      moveMode: null,     // {side, cost, from:[x,y]} 移动子等待目标点
+      sides: { black: emptySide(), white: emptySide() },
+      log: []
+    };
+  }
+
+  function sideOf(state, color) {
+    return state.sides[SIDE_KEY[color]] || state.sides.black;
+  }
+
+  function log(state, text, kind) {
+    state.log.push({ text, kind: kind || 'info', turn: state.moves.length });
+    if (state.log.length > 200) state.log.shift();
+  }
+
+  GVR.State = { SIDE_KEY, SIDE_FROM_KEY, SIDE_NAME, create, sideOf, log };
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/* ---- src/core/bus.js ---- */
+/* 事件总线：按 order 顺序分发 mod 钩子，任一钩子返回 {error} 即中止 */
+(function (root) {
+  'use strict';
+  const GVR = root.GVR || (root.GVR = {});
+
+  function createBus() {
+    const topics = Object.create(null);
+    return {
+      on(topic, fn, order) {
+        const list = topics[topic] || (topics[topic] = []);
+        list.push({ fn, order: Number(order) || 0 });
+        list.sort((a, b) => a.order - b.order);
+      },
+      /** 顺序执行；返回 {ok, error?, results} */
+      emit(topic, ctx) {
+        const list = topics[topic] || [];
+        const results = [];
+        for (const item of list) {
+          let r;
+          try {
+            r = item.fn(ctx);
+          } catch (e) {
+            return { ok: false, error: '规则执行异常：' + e.message, results };
+          }
+          results.push(r);
+          if (r && r.error) return { ok: false, error: r.error, results };
+        }
+        return { ok: true, results };
+      }
+    };
+  }
+
+  GVR.createBus = createBus;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/* ---- src/core/registry.js ---- */
+/* 模组注册表：新增规则只需 registerMod，不改核心 */
+(function (root) {
+  'use strict';
+  const GVR = root.GVR || (root.GVR = {});
+
+  const MODS = [];
+
+  /**
+   * 注册一个规则模组。
+   * 必需：id / label / defaults（enabled、owner 及参数初值）
+   * 可选：group（设置页分组）、summary、order（求值顺序）、scope（'side' 按归属方生效 / 'both' 棋盘机制）
+   *       params（参数 schema：{key,label,type:'number'|'select',min,max,options,default}）
+   *       钩子：init / validatePlace / afterPlace / turnStart / turnEnd / checkWin / arbitrate
+   *       动作：actions([{id,label}]) / actionState / onAction
+   */
+  function registerMod(mod) {
+    if (!mod || !mod.id) throw new Error('模组缺少 id');
+    const idx = MODS.findIndex((m) => m.id === mod.id);
+    if (idx >= 0) MODS[idx] = mod;
+    else MODS.push(mod);
+    return mod;
+  }
+
+  function getMod(id) {
+    return MODS.find((m) => m.id === id) || null;
+  }
+
+  function listMods() {
+    return MODS.slice().sort((a, b) => (a.order || 0) - (b.order || 0));
+  }
+
+  GVR.MODS = MODS;
+  GVR.registerMod = registerMod;
+  GVR.getMod = getMod;
+  GVR.listMods = listMods;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/* ---- src/core/config.js ---- */
+/* 配置文本：只描述「规则 + 参数」，不含任何语句
+   格式：
+     board = 15
+     mod chain on owner=双方 n=5 dirs=横竖斜 mode=至少
+     mod go off
+*/
+(function (root) {
+  'use strict';
+  const GVR = root.GVR || (root.GVR = {});
+
+  const OWNER_LABEL = { both: '双方', black: '黑方', white: '白方' };
+  const OWNER_ALIAS = {
+    '双方': 'both', '两边': 'both', 'both': 'both',
+    '黑': 'black', '黑方': 'black', 'black': 'black',
+    '白': 'white', '白方': 'white', 'white': 'white'
+  };
+  const VALUE_ALIAS = {
+    '横竖斜': 'all', '全部': 'all', 'all': 'all',
+    '仅横竖': 'line', '横竖': 'line', 'line': 'line',
+    '仅斜线': 'diag', '斜线': 'diag', 'diag': 'diag',
+    '至少': 'atLeast', 'atLeast': 'atLeast', 'atleast': 'atLeast',
+    '恰好': 'exact', '正好': 'exact', 'exact': 'exact',
+    '禁入': 'ban', '禁止': 'ban', 'ban': 'ban',
+    '允许': 'allow', 'allow': 'allow'
+  };
+
+  function defaultMods() {
+    const mods = {};
+    for (const mod of GVR.listMods()) {
+      const cfg = { enabled: !!(mod.defaults && mod.defaults.enabled), owner: (mod.defaults && mod.defaults.owner) || 'both' };
+      if (mod.scope === 'board') cfg.owner = 'both';
+      for (const p of (mod.params || [])) cfg[p.key] = p.default;
+      Object.assign(cfg, mod.defaults || {});
+      mods[mod.id] = cfg;
+    }
+    return mods;
+  }
+
+  function defaultDoc() {
+    return { boardSize: 15, mods: defaultMods(), errors: [] };
+  }
+
+  function stripComment(line) {
+    let out = '';
+    let quote = '';
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (quote) {
+        out += ch;
+        if (ch === quote) quote = '';
+        continue;
+      }
+      if (ch === '"' || ch === '\'') { quote = ch; out += ch; continue; }
+      if (ch === '#') break;
+      out += ch;
+    }
+    return out.trim();
+  }
+
+  function tokenize(line) {
+    const tokens = [];
+    const re = /"([^"]*)"|'([^']*)'|([^\s]+)/g;
+    let m;
+    while ((m = re.exec(line))) {
+      const v = m[1] !== undefined ? m[1] : (m[2] !== undefined ? m[2] : m[3]);
+      if (v) tokens.push(v);
+    }
+    return tokens;
+  }
+
+  function coerceParam(mod, field, raw) {
+    const s = String(raw).trim();
+    if (field.type === 'number') {
+      const n = Number(s);
+      if (!isFinite(n)) return { error: '参数 ' + field.key + ' 需要数字，收到「' + s + '」' };
+      let v = Math.round(n);
+      if (field.min != null) v = Math.max(field.min, v);
+      if (field.max != null) v = Math.min(field.max, v);
+      return { value: v };
+    }
+    const alias = VALUE_ALIAS[s] !== undefined ? VALUE_ALIAS[s] : s;
+    const options = field.options || [];
+    const hit = options.find((o) => o.value === alias || o.label === s);
+    if (!hit) return { error: '参数 ' + field.key + ' 取值「' + s + '」不在允许范围' };
+    return { value: hit.value };
+  }
+
+  function parse(text) {
+    const doc = defaultDoc();
+    const lines = String(text == null ? '' : text).replace(/\r/g, '').split('\n');
+    lines.forEach((raw, index) => {
+      const no = index + 1;
+      const line = stripComment(raw);
+      if (!line) return;
+      const board = /^(?:board|size|棋盘)\s*=\s*(\d+)$/i.exec(line);
+      if (board) {
+        const n = Number(board[1]);
+        if (n < 5 || n > 25) doc.errors.push({ no, msg: '棋盘尺寸需在 5~25 之间' });
+        else doc.boardSize = n;
+        return;
+      }
+      const modLine = /^(?:mod|模块|规则)\s+([A-Za-z0-9_-]+)(.*)$/.exec(line);
+      if (!modLine) {
+        doc.errors.push({ no, msg: '无法识别的行：' + line });
+        return;
+      }
+      const id = modLine[1];
+      const mod = GVR.getMod(id);
+      if (!mod) {
+        doc.errors.push({ no, msg: '未知规则模组：' + id });
+        return;
+      }
+      const cfg = doc.mods[id] || (doc.mods[id] = {});
+      cfg.enabled = true;
+      const tokens = tokenize(modLine[2] || '');
+      for (const token of tokens) {
+        if (/^(on|开|启用)$/i.test(token)) { cfg.enabled = true; continue; }
+        if (/^(off|关|禁用)$/i.test(token)) { cfg.enabled = false; continue; }
+        const eq = token.indexOf('=');
+        if (eq < 0) {
+          doc.errors.push({ no, msg: '参数需写成 key=value：' + token });
+          continue;
+        }
+        const key = token.slice(0, eq).trim();
+        const val = token.slice(eq + 1).trim();
+        if (key === 'owner' || key === '归属方' || key === '方') {
+          const owner = OWNER_ALIAS[val];
+          if (!owner) { doc.errors.push({ no, msg: '归属方只能是 双方/黑/白：' + val }); continue; }
+          if (mod.scope === 'board' && owner !== 'both') {
+            doc.errors.push({ no, msg: '规则「' + mod.label + '」是棋盘机制，只能双方生效' });
+            continue;
+          }
+          cfg.owner = owner;
+          continue;
+        }
+        const field = (mod.params || []).find((p) => p.key === key || p.label === key);
+        if (!field) {
+          doc.errors.push({ no, msg: '规则「' + mod.label + '」没有参数 ' + key });
+          continue;
+        }
+        const r = coerceParam(mod, field, val);
+        if (r.error) doc.errors.push({ no, msg: r.error });
+        else cfg[field.key] = r.value;
+      }
+    });
+    return doc;
+  }
+
+  function valueText(mod, field, value) {
+    if (field.type === 'number') return String(value);
+    const opt = (field.options || []).find((o) => o.value === value);
+    return opt ? opt.label : String(value);
+  }
+
+  function serialize(doc) {
+    const lines = ['# 五子棋对围棋 · 规则配置（只含规则与参数，可直接编辑/导入）', '# 语法：mod <规则id> on|off owner=双方|黑|白 <参数=值>', ''];
+    lines.push('board = ' + doc.boardSize, '');
+    for (const mod of GVR.listMods()) {
+      const cfg = doc.mods[mod.id] || {};
+      if (!cfg.enabled) { lines.push('mod ' + mod.id + ' off'); continue; }
+      const parts = ['mod ' + mod.id, 'on'];
+      if (mod.scope !== 'board') parts.push('owner=' + (OWNER_LABEL[cfg.owner] || '双方'));
+      for (const field of (mod.params || [])) {
+        parts.push(field.key + '=' + valueText(mod, field, cfg[field.key]));
+      }
+      lines.push(parts.join(' '));
+    }
+    return lines.join('\n') + '\n';
+  }
+
+  function ownerLabel(owner) {
+    return OWNER_LABEL[owner] || '双方';
+  }
+
+  GVR.Config = {
+    OWNER_LABEL, OWNER_ALIAS, VALUE_ALIAS,
+    defaultDoc, defaultMods, parse, serialize, ownerLabel, stripComment
+  };
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/* ---- src/core/arbiter.js ---- */
+/* 胜负仲裁：把各规则提交的获胜提案收敛为一个结论（纯函数） */
+(function (root) {
+  'use strict';
+  const GVR = root.GVR || (root.GVR = {});
+
+  function resolve(proposals) {
+    const list = (proposals || []).filter((p) => p && (p.winner === 1 || p.winner === 2));
+    if (!list.length) return null;
+    // 多规则同时成立时取规则 order 更靠前者（提案已按 order 收集）
+    return list[0];
+  }
+
+  GVR.Arbiter = { resolve };
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/* ---- src/mods/chain/index.js ---- */
+/* 连珠：落子后形成 n 连珠即获胜（n / 方向 / 至少-恰好可配，归属方可选黑/白/双方） */
+(function (root) {
+  'use strict';
+  const GVR = root.GVR || (root.GVR = {});
+  const B = GVR.Board;
+
+  GVR.registerMod({
+    id: 'chain',
+    label: '连珠',
+    group: '落子规则',
+    summary: '落子后形成 n 连珠触发获胜；可限定横竖或斜线，并可只对某一方生效。',
+    order: 10,
+    scope: 'side',
+    defaults: { enabled: true, owner: 'both' },
+    params: [
+      { key: 'n', label: '连珠数 n', type: 'number', min: 2, max: 12, default: 5 },
+      { key: 'dirs', label: '允许方向', type: 'select', default: 'all',
+        options: [{ value: 'all', label: '横竖斜' }, { value: 'line', label: '仅横竖' }, { value: 'diag', label: '仅斜线' }] },
+      { key: 'mode', label: '判定', type: 'select', default: 'atLeast',
+        options: [{ value: 'atLeast', label: '至少' }, { value: 'exact', label: '恰好' }] }
+    ],
+
+    afterPlace(ctx) {
+      const cfg = ctx.cfg;
+      const side = ctx.engine.sideVars(ctx.color);
+      const info = B.chainInfo(ctx.state.board, ctx.state.size, ctx.x, ctx.y, ctx.color,
+        Number(cfg.n) || 5, cfg.dirs, cfg.mode);
+      side.chainLen = info.ok ? info.length : 0;
+    },
+
+    checkWin(ctx) {
+      const cfg = ctx.cfg;
+      const info = B.chainInfo(ctx.state.board, ctx.state.size, ctx.x, ctx.y, ctx.color,
+        Number(cfg.n) || 5, cfg.dirs, cfg.mode);
+      if (!info.ok) return null;
+      return {
+        winner: ctx.color,
+        reason: info.length + ' 连珠（n=' + (Number(cfg.n) || 5) + '）',
+        cells: info.cells
+      };
+    }
+  });
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/* ---- src/mods/go/index.js ---- */
+/* 围棋：包围对方棋块即提子；自杀禁入可开关（棋盘机制，双方生效） */
+(function (root) {
+  'use strict';
+  const GVR = root.GVR || (root.GVR = {});
+  const B = GVR.Board, State = GVR.State;
+
+  GVR.registerMod({
+    id: 'go',
+    label: '围棋',
+    group: '落子规则',
+    summary: '气与提子规则；开启禁入后，落子后无气且未提子的点不可下。提子数可供获胜规则使用。',
+    order: 20,
+    scope: 'board',
+    defaults: { enabled: false, owner: 'both' },
+    params: [
+      { key: 'suicide', label: '自杀禁入', type: 'select', default: 'ban',
+        options: [{ value: 'ban', label: '禁入' }, { value: 'allow', label: '允许' }] }
+    ],
+
+    validatePlace(ctx) {
+      if (ctx.cfg.suicide !== 'ban') return null;
+      const { state } = ctx;
+      state.board[ctx.y][ctx.x] = ctx.color;
+      const own = B.groupAt(state.board, state.size, ctx.x, ctx.y);
+      const dead = B.findDeadGroups(state.board, state.size, ctx.x, ctx.y, ctx.color);
+      state.board[ctx.y][ctx.x] = B.EMPTY;
+      if (own && own.liberties === 0 && dead.length === 0) {
+        return { error: '自杀禁入：该点落子后无气' };
+      }
+      return null;
+    },
+
+    afterPlace(ctx) {
+      const { state } = ctx;
+      const dead = B.findDeadGroups(state.board, state.size, ctx.x, ctx.y, ctx.color);
+      if (!dead.length) return;
+      const capturer = State.SIDE_KEY[ctx.color];
+      let count = 0;
+      for (const group of dead) {
+        for (const [sx, sy] of group.stones) {
+          if (state.board[sy][sx] === B.EMPTY) continue;
+          state.board[sy][sx] = B.EMPTY;
+          ctx.captured.push([sx, sy]);
+          count += 1;
+        }
+      }
+      state.sides[capturer].captures += count;
+      State.log(state, B.colorName(ctx.color) + '方提子 ' + count + ' 颗（累计 ' + state.sides[capturer].captures + '）', 'capture');
+    }
+  });
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/* ---- src/mods/energy/index.js ---- */
+/* 能量：为归属方提供能量条（初始值、上下限可配），供其他规则获取/消耗 */
+(function (root) {
+  'use strict';
+  const GVR = root.GVR || (root.GVR = {});
+  const State = GVR.State;
+
+  function clamp(v, min, max) {
+    return Math.max(min, Math.min(max, v));
+  }
+
+  GVR.registerMod({
+    id: 'energy',
+    label: '能量',
+    group: '资源规则',
+    summary: '为一方建立能量池；依赖能量的规则（连打、移动子等）在能量不足时不可用。',
+    order: 30,
+    scope: 'side',
+    defaults: { enabled: false, owner: 'white' },
+    params: [
+      { key: 'init', label: '初始能量', type: 'number', min: 0, max: 99, default: 0 },
+      { key: 'min', label: '下限', type: 'number', min: 0, max: 99, default: 0 },
+      { key: 'max', label: '上限', type: 'number', min: 1, max: 99, default: 10 }
+    ],
+
+    init(ctx) {
+      const cfg = ctx.cfg;
+      const min = Math.max(0, Number(cfg.min) || 0);
+      let max = Math.max(1, Number(cfg.max) || 10);
+      if (max < min) max = min;
+      for (const color of [1, 2]) {
+        if (!ctx.engine.activeFor('energy', color)) continue;
+        const v = State.sideOf(ctx.state, color);
+        v.energyMin = min;
+        v.energyMax = max;
+        v.energy = clamp(Number(cfg.init) || 0, min, max);
+      }
+    }
+  });
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/* ---- src/mods/gain/index.js ---- */
+/* 对方落子加能量：对手每落一子，归属方获得 m 点能量 */
+(function (root) {
+  'use strict';
+  const GVR = root.GVR || (root.GVR = {});
+  const B = GVR.Board;
+
+  GVR.registerMod({
+    id: 'gain',
+    label: '对方落子加能量',
+    group: '资源规则',
+    summary: '对手每落一子，归属方获得 m 点能量（需要同时启用能量规则）。',
+    order: 40,
+    scope: 'any', // 归属方是「受益方」，不是落子方，故内部按受益方判定
+    defaults: { enabled: false, owner: 'white' },
+    params: [
+      { key: 'amount', label: '每子获得', type: 'number', min: 1, max: 10, default: 1 }
+    ],
+
+    afterPlace(ctx) {
+      const engine = ctx.engine;
+      const beneficiary = B.opponent(ctx.color);
+      if (!engine.activeFor('gain', beneficiary)) return;
+      const amount = Number(ctx.cfg.amount) || 0;
+      if (amount <= 0) return;
+      engine.addEnergy(beneficiary, amount, '对方落子');
+    }
+  });
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/* ---- src/mods/combo/index.js ---- */
+/* 能量连打：消耗 n 点能量，本回合可额外多下 m 颗子（次数与消耗可配） */
+(function (root) {
+  'use strict';
+  const GVR = root.GVR || (root.GVR = {});
+  const B = GVR.Board, State = GVR.State;
+
+  function stateOf(ctx) {
+    return State.sideOf(ctx.state, ctx.side);
+  }
+
+  GVR.registerMod({
+    id: 'combo',
+    label: '能量连打',
+    group: '资源规则',
+    summary: '消耗能量，本回合获得额外落子机会；每回合可用次数与消耗点数可配。',
+    order: 50,
+    scope: 'side',
+    defaults: { enabled: false, owner: 'white' },
+    params: [
+      { key: 'cost', label: '消耗能量', type: 'number', min: 0, max: 20, default: 5 },
+      { key: 'extra', label: '额外落子数', type: 'number', min: 1, max: 5, default: 1 },
+      { key: 'perTurn', label: '每回合次数', type: 'number', min: 1, max: 5, default: 1 }
+    ],
+    actions: [{ id: 'combo', label: '连打' }],
+
+    init(ctx) {
+      for (const color of [1, 2]) {
+        if (!ctx.engine.activeFor('combo', color)) continue;
+        State.sideOf(ctx.state, color).combos = 0;
+      }
+    },
+
+    turnStart(ctx) {
+      State.sideOf(ctx.state, ctx.color).combos = 0;
+    },
+
+    actionState(ctx) {
+      const cfg = ctx.cfg;
+      const cost = Number(cfg.cost) || 0;
+      const side = stateOf(ctx);
+      if (!ctx.engine.enabled('energy') || !ctx.engine.activeFor('energy', ctx.side)) {
+        return { available: false, hint: '需要先启用能量规则（归属方一致）' };
+      }
+      if ((side.combos || 0) >= (Number(cfg.perTurn) || 1)) {
+        return { available: false, hint: '本回合连打次数已用完' };
+      }
+      if ((side.energy || 0) < cost) {
+        return { available: false, hint: '能量不足：需要 ' + cost + '，当前 ' + (side.energy || 0) };
+      }
+      return { available: true, cost, hint: '消耗 ' + cost + ' 能量，本回合额外落子 +' + (Number(cfg.extra) || 1) };
+    },
+
+    onAction(ctx) {
+      const cfg = ctx.cfg;
+      const cost = Number(cfg.cost) || 0;
+      const extra = Math.max(1, Number(cfg.extra) || 1);
+      const side = stateOf(ctx);
+      if (!ctx.engine.spendEnergy(ctx.side, cost)) {
+        return { error: '能量不足，无法连打' };
+      }
+      side.combos = (side.combos || 0) + 1;
+      ctx.state.extraMoves = (ctx.state.extraMoves || 0) + extra;
+      State.log(ctx.state, B.colorName(ctx.side) + '方连打：消耗 ' + cost + ' 能量，本回合额外落子 +' + extra, 'action');
+      return { ok: true };
+    }
+  });
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/* ---- src/mods/move/index.js ---- */
+/* 消耗能量移动子：把对方一颗棋子移到合法空点（不触发提子/连珠，不结束回合） */
+(function (root) {
+  'use strict';
+  const GVR = root.GVR || (root.GVR = {});
+  const State = GVR.State;
+
+  GVR.registerMod({
+    id: 'move',
+    label: '消耗能量移动子',
+    group: '资源规则',
+    summary: '消耗能量，可把对方的一颗棋子移到空点；目标点需合法（不能让该棋块无气）。',
+    order: 60,
+    scope: 'side',
+    defaults: { enabled: false, owner: 'white' },
+    params: [
+      { key: 'cost', label: '消耗能量', type: 'number', min: 0, max: 20, default: 3 }
+    ],
+    actions: [{ id: 'move', label: '移动子' }],
+
+    actionState(ctx) {
+      const cost = Number(ctx.cfg.cost) || 0;
+      if (!ctx.engine.enabled('energy') || !ctx.engine.activeFor('energy', ctx.side)) {
+        return { available: false, hint: '需要先启用能量规则（归属方一致）' };
+      }
+      const energy = State.sideOf(ctx.state, ctx.side).energy || 0;
+      if (energy < cost) return { available: false, hint: '能量不足：需要 ' + cost + '，当前 ' + energy };
+      return { available: true, cost, hint: '消耗 ' + cost + ' 能量，点击对方棋子再点空点' };
+    },
+
+    onAction(ctx) {
+      const cost = Number(ctx.cfg.cost) || 0;
+      ctx.state.moveMode = { side: ctx.side, cost, actionId: 'move', from: null };
+      State.log(ctx.state, '移动子：请点击' + GVR.Board.colorName(GVR.Board.opponent(ctx.side)) +
+        '方一颗棋子，再点击空点（再次点击按钮可取消）', 'action');
+      return { ok: true, pending: 'move' };
+    }
+  });
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/* ---- src/mods/win/index.js ---- */
+/* 获胜：胜负仲裁入口；支持提子目标数（配合围棋提子计数），并汇总其他规则提交的获胜提案 */
+(function (root) {
+  'use strict';
+  const GVR = root.GVR || (root.GVR = {});
+  const B = GVR.Board, State = GVR.State;
+
+  GVR.registerMod({
+    id: 'win',
+    label: '获胜',
+    group: '胜负规则',
+    summary: '胜负仲裁：接收连珠等规则提交的获胜条件；也可按提子目标数判定。关闭后对局不会自动结束。',
+    order: 90,
+    scope: 'board',
+    defaults: { enabled: true, owner: 'both' },
+    params: [
+      { key: 'captureTarget', label: '提子目标数（0=关闭）', type: 'number', min: 0, max: 200, default: 0 }
+    ],
+
+    checkWin(ctx) {
+      const target = Number(ctx.cfg.captureTarget) || 0;
+      if (target <= 0) return null;
+      for (const color of [1, 2]) {
+        if (!ctx.engine.enabled('go')) continue;
+        if ((State.sideOf(ctx.state, color).captures || 0) >= target) {
+          return { winner: color, reason: '提子达到 ' + target + ' 颗' };
+        }
+      }
+      return null;
+    },
+
+    arbitrate(ctx) {
+      const verdict = GVR.Arbiter.resolve(ctx.proposals);
+      if (!verdict) return null;
+      const reason = verdict.reason || '满足获胜条件';
+      return {
+        winner: verdict.winner,
+        reason: reason + '（' + State.SIDE_NAME[verdict.winner] + '）',
+        cells: verdict.cells || null
+      };
+    }
+  });
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/* ---- templates/index.js ---- */
+/* 内置规则模板：模板就是一份配置文本（规则 + 参数）
+   扩展方式：在 next/templates/ 下新增一个 .js 文件，内容形如
+     GVR.registerTemplate({ key: 'my', name: '我的规则', desc: '说明', text: 'board = 15\nmod ...' });
+   然后在 next/index.html 里加一行 script 标签引用 templates/my.js（放在 main.js 之前），
+   重新运行 npm run build:single 即会自动内联进单文件产物。 */
+(function (root) {
+  'use strict';
+  const GVR = root.GVR || (root.GVR = {});
+
+  const TEMPLATES = [
+    {
+      key: 'gomoku',
+      name: '普通五子棋',
+      desc: '双方连珠 5 子获胜，无围棋、无能量。',
+      text: [
+        '# 普通五子棋：黑方先行，任一方连成 5 子即胜',
+        'board = 15',
+        '',
+        'mod chain on owner=双方 n=5 dirs=横竖斜 mode=至少',
+        'mod go off',
+        'mod win on owner=双方 captureTarget=0',
+        'mod energy off',
+        'mod gain off',
+        'mod combo off',
+        'mod move off'
+      ].join('\n')
+    },
+    {
+      key: 'go30',
+      name: '双方围棋 · 提 30 子胜',
+      desc: '双方按围棋气与提子规则对局，任一方累计提子 30 颗获胜。',
+      text: [
+        '# 双方围棋：气/提子规则；提满 30 子获胜',
+        'board = 15',
+        '',
+        'mod go on owner=双方 suicide=禁入',
+        'mod win on owner=双方 captureTarget=30',
+        'mod chain off',
+        'mod energy off',
+        'mod gain off',
+        'mod combo off',
+        'mod move off'
+      ].join('\n')
+    },
+    {
+      key: 'mix',
+      name: '五子棋对围棋',
+      desc: '黑方连珠 5 子获胜；白方按围棋提子，提满 10 子获胜。',
+      text: [
+        '# 混合对局：黑方连珠 5 子胜；白方围棋提满 10 子胜',
+        'board = 15',
+        '',
+        'mod chain on owner=黑 n=5 dirs=横竖斜 mode=至少',
+        'mod go on owner=双方 suicide=禁入',
+        'mod win on owner=双方 captureTarget=10',
+        'mod energy off',
+        'mod gain off',
+        'mod combo off',
+        'mod move off'
+      ].join('\n')
+    },
+    {
+      key: 'mix-energy',
+      name: '五子棋对围棋 v1',
+      desc: '白方有 10 格能量：黑方每落一子 +1；消耗 5 点可连打，本回合额外落子 1 颗（每回合 1 次）。胜负同上一模板。',
+      text: [
+        '# 五子棋对围棋 v1：白方能量上限 10；黑方落子给白方 +1 能量；5 能量换一次连打',
+        'board = 15',
+        '',
+        'mod chain on owner=黑 n=5 dirs=横竖斜 mode=至少',
+        'mod go on owner=双方 suicide=禁入',
+        'mod energy on owner=白 init=0 min=0 max=10',
+        'mod gain on owner=白 amount=1',
+        'mod combo on owner=白 cost=5 extra=1 perTurn=1',
+        'mod move off owner=白 cost=3',
+        'mod win on owner=双方 captureTarget=10'
+      ].join('\n')
+    }
+  ];
+
+  function registerTemplate(tpl) {
+    if (!tpl || !tpl.key || !tpl.text) throw new Error('模板需要 key 与 text');
+    const idx = TEMPLATES.findIndex((t) => t.key === tpl.key);
+    if (idx >= 0) TEMPLATES[idx] = tpl;
+    else TEMPLATES.push(tpl);
+    return tpl;
+  }
+
+  function getTemplate(key) {
+    return TEMPLATES.find((t) => t.key === key) || TEMPLATES[0];
+  }
+
+  GVR.TEMPLATES = TEMPLATES;
+  GVR.registerTemplate = registerTemplate;
+  GVR.getTemplate = getTemplate;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/* ---- src/core/engine.js ---- */
+/* 规则引擎：装配模组钩子、驱动回合、落子与主动动作、接入胜负仲裁 */
+(function (root) {
+  'use strict';
+  const GVR = root.GVR || (root.GVR = {});
+  const B = GVR.Board, State = GVR.State;
+
+  const PLACE_HOOKS = ['validatePlace', 'afterPlace', 'turnStart', 'turnEnd'];
+
+  class Engine {
+    constructor(doc) {
+      this.doc = doc;
+      this.state = null;
+      this.bus = null;
+      this.warnings = [];
+      this._warned = new Set();
+    }
+
+    /* ---------- 模组与配置 ---------- */
+
+    mods() { return GVR.listMods(); }
+
+    cfg(id) { return (this.doc.mods && this.doc.mods[id]) || {}; }
+
+    enabled(id) {
+      if (!GVR.getMod(id)) return false;
+      return !!this.cfg(id).enabled;
+    }
+
+    activeFor(id, color) {
+      if (!this.enabled(id)) return false;
+      const mod = GVR.getMod(id);
+      if (!mod || mod.scope === 'board') return true;
+      const owner = this.cfg(id).owner || 'both';
+      if (owner === 'both') return true;
+      return owner === State.SIDE_KEY[color];
+    }
+
+    sideVars(color) { return State.sideOf(this.state, color); }
+
+    warn(msg) {
+      const item = { turn: this.state ? this.state.moves.length : 0, msg };
+      this.warnings.push(item);
+      if (this.state) State.log(this.state, msg, 'warn');
+    }
+
+    warnOnce(key, msg) {
+      if (this._warned.has(key)) return;
+      this._warned.add(key);
+      this.warn(msg);
+    }
+
+    /* ---------- 开局 ---------- */
+
+    newGame() {
+      const size = Math.max(5, Math.min(25, Number(this.doc.boardSize) || 15));
+      this.state = State.create(size);
+      this.warnings = [];
+      this._warned.clear();
+      this.bus = GVR.createBus();
+
+      for (const mod of this.mods()) {
+        for (const hook of PLACE_HOOKS) {
+          if (typeof mod[hook] !== 'function') continue;
+          this.bus.on(hook, (ctx) => this.invoke(mod, hook, ctx), mod.order);
+        }
+        if (typeof mod.checkWin === 'function') {
+          this.bus.on('checkWin', (ctx) => this.invoke(mod, 'checkWin', ctx), mod.order);
+        }
+      }
+
+      for (const mod of this.mods()) {
+        if (!this.enabled(mod.id) || typeof mod.init !== 'function') continue;
+        try {
+          mod.init({ engine: this, state: this.state, cfg: this.cfg(mod.id) });
+        } catch (e) {
+          this.warn('规则「' + mod.label + '」初始化失败：' + e.message);
+        }
+      }
+
+      State.log(this.state, '对局开始 · ' + size + '×' + size + ' · 黑方先行', 'sys');
+      return this.state;
+    }
+
+    invoke(mod, hook, ctx) {
+      if (!this.enabled(mod.id)) return null;
+      if (mod.scope === 'side' && ctx && ctx.color && !this.activeFor(mod.id, ctx.color)) return null;
+      const view = Object.assign({ engine: this, state: this.state, cfg: this.cfg(mod.id) }, ctx);
+      return mod[hook](view);
+    }
+
+    /* ---------- 落子 ---------- */
+
+    tryMove(x, y, color) {
+      const st = this.state;
+      if (!st) return { ok: false, error: '对局未开始' };
+      if (st.ended) return { ok: false, error: '对局已结束' };
+      if (st.moveMode) return { ok: false, error: '正在移动棋子，请先选择目标点或取消' };
+      const side = color || st.turn;
+      if (st.turn !== side) return { ok: false, error: '还没轮到' + B.colorName(side) + '方' };
+      if (!B.inBounds(st.size, x, y)) return { ok: false, error: '超出棋盘' };
+      if (st.board[y][x] !== B.EMPTY) return { ok: false, error: '该点已有棋子' };
+
+      const ctx = { color: side, x, y, captured: [] };
+      const pre = this.bus.emit('validatePlace', ctx);
+      if (!pre.ok) return { ok: false, error: pre.error };
+
+      st.board[y][x] = side;
+      st.lastMove = { x, y, color: side };
+      st.moves.push({ x, y, color: side });
+      st.turnActions += 1;
+
+      const post = this.bus.emit('afterPlace', ctx);
+      if (!post.ok) this.warn(post.error);
+
+      this.resolveWin(ctx);
+
+      if (!st.ended) {
+        if ((st.extraMoves || 0) > 0) {
+          st.extraMoves -= 1;
+          State.log(st, B.colorName(side) + '方额外落子，本回合继续', 'turn');
+        } else {
+          this.nextTurn();
+        }
+      }
+      return { ok: true, captured: ctx.captured };
+    }
+
+    nextTurn() {
+      const st = this.state;
+      const prev = st.turn;
+      this.bus.emit('turnEnd', { color: prev });
+      st.turn = B.opponent(prev);
+      st.turnActions = 0;
+      st.moveMode = null;
+      this.bus.emit('turnStart', { color: st.turn });
+      State.log(st, '轮到' + B.colorName(st.turn) + '方', 'turn');
+    }
+
+    /* ---------- 胜负 ---------- */
+
+    resolveWin(ctx) {
+      const st = this.state;
+      if (st.ended) return null;
+      const r = this.bus.emit('checkWin', ctx);
+      const proposals = (r.results || []).filter((p) => p && (p.winner === 1 || p.winner === 2));
+      if (!proposals.length) return null;
+
+      const winMod = GVR.getMod('win');
+      if (!winMod || !this.enabled('win')) {
+        this.warnOnce('win-off', '获胜规则未启用：满足获胜条件但无法结算');
+        return null;
+      }
+      let verdict = null;
+      try {
+        verdict = winMod.arbitrate({
+          engine: this, state: st, cfg: this.cfg('win'), proposals
+        });
+      } catch (e) {
+        this.warn('胜负仲裁失败：' + e.message);
+        return null;
+      }
+      if (verdict) this.endGame(verdict.winner, verdict.reason, verdict.cells);
+      return verdict;
+    }
+
+    endGame(winner, reason, cells) {
+      const st = this.state;
+      if (!st || st.ended) return false;
+      st.ended = true;
+      st.winner = winner;
+      st.winReason = reason || '满足结束条件';
+      if (cells && cells.length) st.winLine = cells;
+      const who = winner === 0 ? '平局' : B.colorName(winner) + '方';
+      State.log(st, '对局结束：' + who + ' —— ' + st.winReason, 'end');
+      return true;
+    }
+
+    /* ---------- 能量（能量 mod 写入状态，其余规则通过引擎读写） ---------- */
+
+    energyOf(color) { return this.sideVars(color).energy || 0; }
+
+    addEnergy(color, amount, reason) {
+      const v = this.sideVars(color);
+      if ((v.energyMax || 0) <= 0) {
+        this.warnOnce('energy-off', '能量规则未启用，无法获得能量');
+        return 0;
+      }
+      const before = v.energy || 0;
+      const min = v.energyMin || 0;
+      const max = v.energyMax || 0;
+      v.energy = Math.max(min, Math.min(max, before + Number(amount || 0)));
+      const delta = v.energy - before;
+      if (delta !== 0) {
+        State.log(this.state, B.colorName(color) + '方能量 ' + (delta > 0 ? '+' : '') + delta +
+          '（' + before + '→' + v.energy + '）' + (reason ? ' · ' + reason : ''), 'energy');
+      }
+      return delta;
+    }
+
+    spendEnergy(color, amount) {
+      const v = this.sideVars(color);
+      const cost = Number(amount || 0);
+      if (cost <= 0) return true;
+      if (!this.enabled('energy') || !this.activeFor('energy', color)) return false;
+      if ((v.energy || 0) < cost) return false;
+      const before = v.energy;
+      v.energy = before - cost;
+      State.log(this.state, B.colorName(color) + '方消耗 ' + cost + ' 能量（' + before + '→' + v.energy + '）', 'energy');
+      return true;
+    }
+
+    /* ---------- 主动动作（连打 / 移动子等） ---------- */
+
+    listActions(color) {
+      const out = [];
+      const st = this.state;
+      if (!st || st.ended) return out;
+      for (const mod of this.mods()) {
+        if (!mod.actions || !this.activeFor(mod.id, color)) continue;
+        for (const action of mod.actions) {
+          let info = { available: true, hint: '' };
+          if (typeof mod.actionState === 'function') {
+            try {
+              info = Object.assign({ available: true, hint: '' }, mod.actionState({
+                engine: this, state: st, cfg: this.cfg(mod.id), side: color, color, action: action.id
+              }) || {});
+            } catch (e) {
+              info = { available: false, hint: e.message };
+            }
+          }
+          out.push({
+            id: action.id, label: action.label, modId: mod.id,
+            available: info.available !== false,
+            hint: info.hint || '',
+            cost: info.cost
+          });
+        }
+      }
+      return out;
+    }
+
+    runAction(color, actionId) {
+      const st = this.state;
+      if (!st) return { ok: false, error: '对局未开始' };
+      if (st.ended) return { ok: false, error: '对局已结束' };
+      if (st.turn !== color) return { ok: false, error: '还没轮到' + B.colorName(color) + '方' };
+
+      if (actionId === 'resign') {
+        this.endGame(B.opponent(color), B.colorName(color) + '方认输');
+        return { ok: true };
+      }
+
+      if (st.moveMode && actionId === st.moveMode.actionId) {
+        st.moveMode = null;
+        State.log(st, B.colorName(color) + '方取消移动', 'action');
+        return { ok: true, cancelled: true };
+      }
+
+      const provider = this.mods().find((m) => this.activeFor(m.id, color) &&
+        (m.actions || []).some((a) => a.id === actionId));
+      if (!provider) return { ok: false, error: '该操作未启用' };
+
+      const info = Object.assign({ available: true, hint: '' }, (provider.actionState ? provider.actionState({
+        engine: this, state: st, cfg: this.cfg(provider.id), side: color, color, action: actionId
+      }) : {}) || {});
+      if (info.available === false) return { ok: false, error: info.hint || '该操作当前不可用' };
+
+      try {
+        const res = provider.onAction({
+          engine: this, state: st, cfg: this.cfg(provider.id), side: color, color, action: actionId
+        });
+        if (res && res.error) return { ok: false, error: res.error };
+        return Object.assign({ ok: true }, res || {});
+      } catch (e) {
+        return { ok: false, error: provider.label + ' 执行失败：' + e.message };
+      }
+    }
+
+    /** 移动子：消耗能量把对方一颗棋子移到空点（不触发提子/连珠，不结束回合） */
+    executeMove(side, from, to) {
+      const st = this.state;
+      if (!st || st.ended) return { ok: false, error: '对局已结束' };
+      const mode = st.moveMode;
+      if (!mode || mode.side !== side) return { ok: false, error: '未进入移动模式' };
+      if (!B.inBounds(st.size, from[0], from[1]) || !B.inBounds(st.size, to[0], to[1])) {
+        return { ok: false, error: '超出棋盘' };
+      }
+      const mover = B.opponent(side);
+      if (st.board[from[1]][from[0]] !== mover) return { ok: false, error: '只能移动对方的棋子' };
+      if (st.board[to[1]][to[0]] !== B.EMPTY) return { ok: false, error: '目标点已有棋子' };
+
+      st.board[from[1]][from[0]] = B.EMPTY;
+      st.board[to[1]][to[0]] = mover;
+      const group = B.groupAt(st.board, st.size, to[0], to[1]);
+      if (!group || group.liberties === 0) {
+        st.board[to[1]][to[0]] = B.EMPTY;
+        st.board[from[1]][from[0]] = mover;
+        return { ok: false, error: '目标点会让该棋子无气，非法' };
+      }
+      if (!this.spendEnergy(side, mode.cost)) {
+        st.board[to[1]][to[0]] = B.EMPTY;
+        st.board[from[1]][from[0]] = mover;
+        return { ok: false, error: '能量不足以移动棋子' };
+      }
+
+      st.moveMode = null;
+      st.lastMove = { x: to[0], y: to[1], color: mover, moved: true };
+      State.log(st, B.colorName(side) + '方把' + B.colorName(mover) + '方棋子从 (' + from[0] + ',' + from[1] +
+        ') 移到 (' + to[0] + ',' + to[1] + ')，未触发提子/连珠', 'action');
+      return { ok: true };
+    }
+  }
+
+  GVR.Engine = Engine;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/* ---- src/ui/board.js ---- */
+/* Canvas 棋盘：绘制与点击命中（ui 层，不含规则） */
+(function (root) {
+  'use strict';
+  const GVR = root.GVR || (root.GVR = {});
+
+  class BoardView {
+    constructor(canvas) {
+      this.canvas = canvas;
+      this.ctx = canvas.getContext('2d');
+      this.engine = null;
+      this.opts = { interactive: false, coords: false, turn: 0, selected: null, moveMode: null };
+      this.hover = null;
+      this.side = 0;
+      this.pad = 0;
+      this.cell = 0;
+      this.onCell = null;
+    }
+
+    attach(onCell) {
+      this.onCell = onCell;
+      this.canvas.addEventListener('mousemove', (e) => {
+        const c = this.hitTest(e);
+        const changed = (c && !this.hover) || (!c && this.hover) ||
+          (c && this.hover && (c.x !== this.hover.x || c.y !== this.hover.y));
+        if (changed) { this.hover = c; this.draw(); }
+      });
+      this.canvas.addEventListener('mouseleave', () => { this.hover = null; this.draw(); });
+      this.canvas.addEventListener('click', (e) => {
+        const c = this.hitTest(e);
+        if (c && this.onCell) this.onCell(c.x, c.y);
+      });
+      this.canvas.addEventListener('touchstart', (e) => {
+        const t = e.touches[0];
+        if (!t) return;
+        const c = this.hitTest({ clientX: t.clientX, clientY: t.clientY });
+        if (c && this.onCell) { e.preventDefault(); this.onCell(c.x, c.y); }
+      }, { passive: false });
+    }
+
+    render(engine, opts) {
+      this.engine = engine;
+      this.opts = Object.assign({ interactive: false, coords: false, turn: 0, selected: null, moveMode: null }, opts || {});
+      this.resize();
+    }
+
+    resize() {
+      const state = this.engine && this.engine.state;
+      if (!state) return;
+      const parent = this.canvas.parentElement;
+      const availW = parent ? parent.clientWidth : 420;
+      const side = Math.max(300, Math.min(availW || 420, window.innerHeight - 260, 680));
+      const dpr = window.devicePixelRatio || 1;
+      this.canvas.style.width = this.canvas.style.height = side + 'px';
+      this.canvas.width = this.canvas.height = Math.round(side * dpr);
+      this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      this.side = side;
+      this.pad = Math.round(side * 0.07);
+      this.cell = (side - this.pad * 2) / (state.size - 1);
+      this.draw();
+    }
+
+    xy(x, y) {
+      return [this.pad + x * this.cell, this.pad + y * this.cell];
+    }
+
+    hitTest(e) {
+      const state = this.engine && this.engine.state;
+      if (!state) return null;
+      const rect = this.canvas.getBoundingClientRect();
+      const px = e.clientX - rect.left, py = e.clientY - rect.top;
+      const x = Math.round((px - this.pad) / this.cell);
+      const y = Math.round((py - this.pad) / this.cell);
+      if (x < 0 || y < 0 || x >= state.size || y >= state.size) return null;
+      const [cx, cy] = this.xy(x, y);
+      if (Math.hypot(px - cx, py - cy) > this.cell * 0.52) return null;
+      return { x, y };
+    }
+
+    draw() {
+      const ctx = this.ctx;
+      const state = this.engine && this.engine.state;
+      const size = state ? state.size : 15;
+      const side = this.side;
+      if (!side) return;
+
+      const bg = ctx.createLinearGradient(0, 0, side, side);
+      bg.addColorStop(0, '#e3b877');
+      bg.addColorStop(0.5, '#d8a962');
+      bg.addColorStop(1, '#c99a55');
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, side, side);
+
+      ctx.strokeStyle = 'rgba(110,80,42,.85)';
+      ctx.lineWidth = 1;
+      for (let i = 0; i < size; i++) {
+        const [x1, y1] = this.xy(0, i);
+        const [x2] = this.xy(size - 1, i);
+        ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y1); ctx.stroke();
+        const [ax, ay] = this.xy(i, 0);
+        const [, by] = this.xy(i, size - 1);
+        ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(ax, by); ctx.stroke();
+      }
+
+      ctx.fillStyle = 'rgba(96,68,34,.9)';
+      for (const [sx, sy] of stars(size)) {
+        const [cx, cy] = this.xy(sx, sy);
+        ctx.beginPath(); ctx.arc(cx, cy, Math.max(2, this.cell * 0.1), 0, Math.PI * 2); ctx.fill();
+      }
+
+      if (this.opts.coords) {
+        ctx.fillStyle = 'rgba(78,54,26,.9)';
+        ctx.font = Math.max(9, Math.round(this.cell * 0.34)) + 'px Consolas, monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        for (let i = 0; i < size; i++) {
+          const [cx, cy] = this.xy(i, 0);
+          ctx.fillText(String.fromCharCode(65 + i), cx, cy - this.cell * 0.72);
+          const [lx, ly] = this.xy(0, i);
+          ctx.fillText(String(i + 1), lx - this.cell * 0.72, ly);
+        }
+      }
+
+      if (!state) return;
+
+      const moveMode = this.opts.moveMode;
+      const canPlay = this.opts.interactive && !state.ended && !moveMode && this.opts.turn === state.turn;
+      if (canPlay && this.hover && state.board[this.hover.y][this.hover.x] === 0) {
+        const [cx, cy] = this.xy(this.hover.x, this.hover.y);
+        ctx.globalAlpha = 0.45;
+        this.stone(cx, cy, state.turn);
+        ctx.globalAlpha = 1;
+      }
+
+      for (let y = 0; y < size; y++) {
+        for (let x = 0; x < size; x++) {
+          if (state.board[y][x] !== 0) {
+            const [cx, cy] = this.xy(x, y);
+            this.stone(cx, cy, state.board[y][x]);
+          }
+        }
+      }
+
+      if (moveMode && moveMode.from) {
+        const [cx, cy] = this.xy(moveMode.from[0], moveMode.from[1]);
+        ctx.strokeStyle = '#2f7fd0';
+        ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(cx, cy, this.cell * 0.30, 0, Math.PI * 2); ctx.stroke();
+      } else if (moveMode && this.hover && state.board[this.hover.y][this.hover.x] !== 0) {
+        const [cx, cy] = this.xy(this.hover.x, this.hover.y);
+        ctx.strokeStyle = 'rgba(47,127,208,.75)';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(cx, cy, this.cell * 0.30, 0, Math.PI * 2); ctx.stroke();
+      }
+
+      if (this.opts.selected) {
+        const [cx, cy] = this.xy(this.opts.selected[0], this.opts.selected[1]);
+        ctx.strokeStyle = 'rgba(226,169,92,.95)';
+        ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(cx, cy, this.cell * 0.34, 0, Math.PI * 2); ctx.stroke();
+      }
+
+      if (state.lastMove) {
+        const [cx, cy] = this.xy(state.lastMove.x, state.lastMove.y);
+        ctx.strokeStyle = '#c9432f';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(cx, cy, this.cell * 0.17, 0, Math.PI * 2); ctx.stroke();
+      }
+
+      if (state.winLine && state.winLine.length) {
+        ctx.strokeStyle = 'rgba(201,67,47,.85)';
+        ctx.lineWidth = 4;
+        const a = state.winLine[0], b = state.winLine[state.winLine.length - 1];
+        const [ax, ay] = this.xy(a[0], a[1]);
+        const [bx, by] = this.xy(b[0], b[1]);
+        ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
+      }
+    }
+
+    stone(cx, cy, color) {
+      const ctx = this.ctx;
+      const r = this.cell * 0.44;
+      const g = ctx.createRadialGradient(cx - r * 0.35, cy - r * 0.35, r * 0.12, cx, cy, r);
+      if (color === 1) { g.addColorStop(0, '#6b6b6b'); g.addColorStop(1, '#0b0b0b'); }
+      else { g.addColorStop(0, '#ffffff'); g.addColorStop(1, '#c8c2b4'); }
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = color === 1 ? 'rgba(255,255,255,.08)' : 'rgba(90,80,60,.25)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+  }
+
+  function stars(size) {
+    if (size === 15) return [[3, 3], [11, 3], [3, 11], [11, 11], [7, 7]];
+    if (size === 19) return [[3, 3], [9, 3], [15, 3], [3, 9], [9, 9], [15, 9], [3, 15], [9, 15], [15, 15]];
+    const c = Math.floor(size / 2);
+    return [[c, c]];
+  }
+
+  GVR.BoardView = BoardView;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/* ---- src/ui/energy.js ---- */
+/* 能量条组件：对局侧栏与设置页预览共用（UI 扩展点示例） */
+(function (root) {
+  'use strict';
+  const GVR = root.GVR || (root.GVR = {});
+
+  /** opts: {value, min, max, label, empty} */
+  function render(container, opts) {
+    const o = Object.assign({ value: 0, min: 0, max: 10, label: '能量', empty: '' }, opts || {});
+    container.innerHTML = '';
+    if (o.empty) {
+      const tip = document.createElement('div');
+      tip.className = 'energy-empty';
+      tip.textContent = o.empty;
+      container.appendChild(tip);
+      return;
+    }
+    const max = Math.max(1, Number(o.max) || 0);
+    const value = Math.max(0, Math.min(max, Number(o.value) || 0));
+
+    const head = document.createElement('div');
+    head.className = 'kv';
+    const name = document.createElement('span');
+    name.textContent = o.label;
+    const num = document.createElement('b');
+    num.textContent = value + ' / ' + max;
+    head.appendChild(name); head.appendChild(num);
+    container.appendChild(head);
+
+    const cells = document.createElement('div');
+    cells.className = 'energy-cells';
+    for (let i = 0; i < max; i++) {
+      const cell = document.createElement('div');
+      cell.className = 'energy-cell' + (i < value ? ' on' : '');
+      cells.appendChild(cell);
+    }
+    container.appendChild(cells);
+  }
+
+  GVR.EnergyBar = { render };
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/* ---- src/ui/templates.js ---- */
+/* 模板页：内置模板卡片 + 文件扩展说明 */
+(function (root) {
+  'use strict';
+  const GVR = root.GVR || (root.GVR = {});
+
+  function render(container, activeKey, onPick) {
+    container.innerHTML = '';
+    for (const tpl of GVR.TEMPLATES) {
+      const card = document.createElement('button');
+      card.type = 'button';
+      card.className = 'tpl-card' + (tpl.key === activeKey ? ' active' : '');
+      const name = document.createElement('div');
+      name.className = 'tpl-name';
+      name.textContent = tpl.name;
+      const desc = document.createElement('div');
+      desc.className = 'tpl-desc';
+      desc.textContent = tpl.desc || '';
+      card.appendChild(name);
+      card.appendChild(desc);
+      card.addEventListener('click', () => onPick(tpl));
+      container.appendChild(card);
+    }
+  }
+
+  GVR.TemplateList = { render };
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/* ---- src/ui/settings.js ---- */
+/* 设置页：按规则分组渲染「开关 / 归属方 / 参数」面板（纯配置，无脚本） */
+(function (root) {
+  'use strict';
+  const GVR = root.GVR || (root.GVR = {});
+  const Config = GVR.Config;
+
+  const OWNER_OPTIONS = [['both', '双方'], ['black', '黑方'], ['white', '白方']];
+
+  function renderMods(container, doc, onChange) {
+    container.innerHTML = '';
+    const groups = [];
+    for (const mod of GVR.listMods()) {
+      const key = mod.group || '其他';
+      let g = groups.find((x) => x.key === key);
+      if (!g) { g = { key, mods: [] }; groups.push(g); }
+      g.mods.push(mod);
+    }
+
+    for (const group of groups) {
+      const section = document.createElement('div');
+      section.className = 'mod-group';
+      const title = document.createElement('div');
+      title.className = 'mod-group-title';
+      title.textContent = group.key;
+      section.appendChild(title);
+      for (const mod of group.mods) {
+        section.appendChild(renderModCard(mod, doc, onChange));
+      }
+      container.appendChild(section);
+    }
+  }
+
+  function renderModCard(mod, doc, onChange) {
+    const cfg = doc.mods[mod.id] || {};
+    const card = document.createElement('div');
+    card.className = 'mod-card' + (cfg.enabled ? '' : ' disabled');
+
+    const head = document.createElement('div');
+    head.className = 'mod-head';
+    const sw = document.createElement('label');
+    sw.className = 'switch';
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.checked = !!cfg.enabled;
+    const slider = document.createElement('span');
+    sw.appendChild(cb); sw.appendChild(slider);
+    cb.addEventListener('change', () => onChange(mod.id, 'enabled', cb.checked));
+
+    const titleWrap = document.createElement('div');
+    titleWrap.className = 'mod-title';
+    const name = document.createElement('div');
+    name.className = 'mod-name';
+    name.innerHTML = mod.label + ' <code>' + mod.id + '</code>';
+    const desc = document.createElement('div');
+    desc.className = 'mod-desc';
+    desc.textContent = mod.summary || '';
+    titleWrap.appendChild(name); titleWrap.appendChild(desc);
+    head.appendChild(sw); head.appendChild(titleWrap);
+    card.appendChild(head);
+
+    if (cfg.enabled) {
+      const body = document.createElement('div');
+      body.className = 'mod-body';
+
+      if (mod.scope === 'board') {
+        const row = document.createElement('div');
+        row.className = 'ctl-row';
+        const lab = document.createElement('span');
+        lab.textContent = '归属方';
+        const val = document.createElement('div');
+        val.className = 'ctl-static';
+        val.textContent = '双方（棋盘机制）';
+        row.appendChild(lab); row.appendChild(val);
+        body.appendChild(row);
+      } else {
+        body.appendChild(selectRow('归属方', cfg.owner || 'both', OWNER_OPTIONS,
+          (v) => onChange(mod.id, 'owner', v)));
+      }
+
+      for (const field of (mod.params || [])) {
+        if (field.type === 'select') {
+          body.appendChild(selectRow(field.label, cfg[field.key], (field.options || []).map((o) => [o.value, o.label]),
+            (v) => onChange(mod.id, field.key, v)));
+        } else {
+          body.appendChild(numberRow(field, cfg[field.key], (v) => onChange(mod.id, field.key, v)));
+        }
+      }
+
+      if (dependsOnEnergy(mod.id) && !energyReady(doc, cfg.owner)) {
+        const note = document.createElement('div');
+        note.className = 'mod-note';
+        note.textContent = '依赖能量规则：需启用「能量」并覆盖相同归属方，否则此规则的动作不可用。';
+        body.appendChild(note);
+      }
+      card.appendChild(body);
+    }
+    return card;
+  }
+
+  function dependsOnEnergy(id) {
+    return id === 'combo' || id === 'move' || id === 'gain';
+  }
+
+  function energyReady(doc, owner) {
+    const e = doc.mods.energy;
+    if (!e || !e.enabled) return false;
+    if (owner === 'both' || e.owner === 'both') return true;
+    return e.owner === owner;
+  }
+
+  function selectRow(label, value, options, onChange) {
+    const row = document.createElement('div');
+    row.className = 'ctl-row';
+    const lab = document.createElement('span');
+    lab.textContent = label;
+    const sel = document.createElement('select');
+    for (const [v, text] of options) {
+      const opt = document.createElement('option');
+      opt.value = v;
+      opt.textContent = text;
+      if (String(value) === String(v)) opt.selected = true;
+      sel.appendChild(opt);
+    }
+    sel.addEventListener('change', () => onChange(sel.value));
+    row.appendChild(lab); row.appendChild(sel);
+    return row;
+  }
+
+  function numberRow(field, value, onChange) {
+    const row = document.createElement('div');
+    row.className = 'ctl-row';
+    const lab = document.createElement('span');
+    lab.textContent = field.label;
+    const input = document.createElement('input');
+    input.type = 'number';
+    if (field.min != null) input.min = field.min;
+    if (field.max != null) input.max = field.max;
+    input.step = '1';
+    input.value = value != null ? value : (field.default || 0);
+    input.addEventListener('change', () => {
+      let v = Number(input.value);
+      if (!isFinite(v)) v = field.min || 0;
+      v = Math.round(v);
+      if (field.min != null) v = Math.max(field.min, v);
+      if (field.max != null) v = Math.min(field.max, v);
+      input.value = v;
+      onChange(v);
+    });
+    row.appendChild(lab); row.appendChild(input);
+    return row;
+  }
+
+  /* 设置页的能量条实时预览：与能量规则的开关/参数联动 */
+  function renderEnergyPreview(container, doc) {
+    container.innerHTML = '';
+    const cfg = doc.mods.energy;
+    const title = document.createElement('div');
+    title.className = 'preview-title';
+    title.textContent = '能量条预览（随配置联动）';
+    container.appendChild(title);
+
+    const wrap = document.createElement('div');
+    wrap.className = 'preview-body';
+    if (!cfg || !cfg.enabled) {
+      const empty = document.createElement('div');
+      empty.className = 'energy-empty';
+      empty.textContent = '能量规则未启用：依赖能量的规则不可用。';
+      wrap.appendChild(empty);
+      container.appendChild(wrap);
+      return;
+    }
+    const owners = cfg.owner === 'both' ? [1, 2] : [cfg.owner === 'black' ? 1 : 2];
+    for (const color of owners) {
+      const box = document.createElement('div');
+      box.className = 'preview-side';
+      const name = document.createElement('div');
+      name.className = 'preview-side-name';
+      name.textContent = GVR.Board.colorName(color) + '方';
+      box.appendChild(name);
+      const bar = document.createElement('div');
+      GVR.EnergyBar.render(bar, {
+        value: Math.max(Number(cfg.min) || 0, Math.min(Number(cfg.max) || 1, Number(cfg.init) || 0)),
+        min: cfg.min, max: cfg.max, label: '初始能量'
+      });
+      box.appendChild(bar);
+      wrap.appendChild(box);
+    }
+    container.appendChild(wrap);
+
+    const deps = [];
+    if (doc.mods.gain && doc.mods.gain.enabled) {
+      deps.push('对方落子 +' + (Number(doc.mods.gain.amount) || 0) + ' 能量');
+    }
+    if (doc.mods.combo && doc.mods.combo.enabled) {
+      deps.push('连打：' + (Number(doc.mods.combo.cost) || 0) + ' 能量 → 额外 ' +
+        (Number(doc.mods.combo.extra) || 1) + ' 子（每回合 ' + (Number(doc.mods.combo.perTurn) || 1) + ' 次）');
+    }
+    if (doc.mods.move && doc.mods.move.enabled) {
+      deps.push('移动子：' + (Number(doc.mods.move.cost) || 0) + ' 能量');
+    }
+    const line = document.createElement('div');
+    line.className = 'preview-deps';
+    line.textContent = deps.length ? deps.join(' · ') : '当前没有规则消耗/获取能量';
+    container.appendChild(line);
+  }
+
+  function renderErrors(container, errors) {
+    container.innerHTML = '';
+    if (!errors || !errors.length) {
+      container.classList.add('hidden');
+      return;
+    }
+    container.classList.remove('hidden');
+    for (const e of errors.slice(0, 12)) {
+      const row = document.createElement('div');
+      row.className = 'error-row';
+      row.textContent = (e.no ? '第 ' + e.no + ' 行：' : '') + e.msg;
+      container.appendChild(row);
+    }
+  }
+
+  GVR.Settings = {
+    renderMods, renderEnergyPreview, renderErrors,
+    ownerLabel: Config.ownerLabel
+  };
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/* ---- src/ui/game.js ---- */
+/* 对局页：棋盘、双方面板（含能量条）、动作栏、日志、结算 */
+(function (root) {
+  'use strict';
+  const GVR = root.GVR || (root.GVR = {});
+  const B = GVR.Board, State = GVR.State;
+
+  class GameView {
+    constructor(dom, opts) {
+      this.dom = dom;
+      this.onToast = (opts && opts.onToast) || function () {};
+      this.onBack = (opts && opts.onBack) || function () {};
+      this.engine = null;
+      this.view = new GVR.BoardView(dom.board);
+      this.view.attach((x, y) => this.handleCell(x, y));
+    }
+
+    start(engine) {
+      this.engine = engine;
+      this.render();
+      setTimeout(() => this.view.resize(), 20);
+    }
+
+    resize() {
+      if (this.engine) this.view.resize();
+    }
+
+    cancelMove() {
+      const st = this.engine && this.engine.state;
+      if (!st || !st.moveMode) return;
+      const res = this.engine.runAction(st.moveMode.side, st.moveMode.actionId);
+      if (!res.ok) this.onToast(res.error);
+      this.render();
+    }
+
+    handleCell(x, y) {
+      const engine = this.engine;
+      if (!engine || !engine.state || engine.state.ended) return;
+      const st = engine.state;
+      if (st.moveMode) {
+        const mover = B.opponent(st.moveMode.side);
+        if (!st.moveMode.from) {
+          if (st.board[y][x] !== mover) {
+            this.onToast('请先点击' + B.colorName(mover) + '方的一颗棋子');
+            return;
+          }
+          st.moveMode.from = [x, y];
+          this.render();
+          return;
+        }
+        const res = engine.executeMove(st.moveMode.side, st.moveMode.from, [x, y]);
+        if (!res.ok) this.onToast(res.error);
+        this.render();
+        return;
+      }
+      const res = engine.tryMove(x, y);
+      if (!res.ok) this.onToast(res.error);
+      this.render();
+    }
+
+    render() {
+      if (!this.engine) return;
+      const engine = this.engine;
+      const st = engine.state;
+      this.view.render(engine, {
+        interactive: true,
+        turn: st.turn,
+        moveMode: st.moveMode,
+        selected: st.moveMode && st.moveMode.from,
+        coords: false
+      });
+      this.renderStatus();
+      this.renderSide(this.dom.blackPanel, 1);
+      this.renderSide(this.dom.whitePanel, 2);
+      this.renderActions();
+      this.renderLog();
+      this.renderOverlay();
+    }
+
+    renderStatus() {
+      const st = this.engine.state;
+      const el = this.dom.statusText;
+      el.classList.toggle('ended', st.ended);
+      el.classList.toggle('my-turn', !st.ended);
+      if (st.ended) {
+        el.textContent = '对局结束：' + (st.winner ? B.colorName(st.winner) + '方胜' : '平局') + ' · ' + st.winReason;
+        return;
+      }
+      let text = '轮到' + B.colorName(st.turn) + '方 · 第 ' + (st.moves.length + 1) + ' 手';
+      if (st.extraMoves > 0) text += ' · 额外落子 ×' + st.extraMoves;
+      if (st.moveMode) text += ' · 移动子：点击对方棋子后点空点';
+      el.textContent = text;
+    }
+
+    renderSide(el, color) {
+      const engine = this.engine;
+      const st = engine.state;
+      const side = State.sideOf(st, color);
+      const name = B.colorName(color) + '方';
+      el.innerHTML = '';
+      const head = document.createElement('div');
+      head.className = 'sp-head';
+      head.innerHTML = '<span class="dot ' + (color === 1 ? 'black' : 'white') + '"></span>' + name;
+      el.appendChild(head);
+
+      if (engine.enabled('go')) {
+        const target = Number(engine.cfg('win').captureTarget) || 0;
+        el.appendChild(kv('提子', (side.captures || 0) + (target > 0 ? ' / ' + target : '')));
+      }
+      if (engine.activeFor('chain', color)) {
+        el.appendChild(kv('当前连珠', (side.chainLen || 0) + ' 子'));
+      }
+      if (engine.activeFor('energy', color) && (side.energyMax || 0) > 0) {
+        const box = document.createElement('div');
+        box.className = 'energy-row';
+        GVR.EnergyBar.render(box, { value: side.energy, max: side.energyMax, label: '能量' });
+        el.appendChild(box);
+      }
+      if (engine.activeFor('combo', color)) {
+        el.appendChild(kv('本回合连打', (side.combos || 0) + ' / ' + (Number(engine.cfg('combo').perTurn) || 1)));
+      }
+      el.classList.toggle('active', st.turn === color && !st.ended);
+    }
+
+    renderActions() {
+      const engine = this.engine;
+      const st = engine.state;
+      const bar = this.dom.actionBar;
+      bar.innerHTML = '';
+      const list = engine.listActions(st.turn);
+      for (const item of list) {
+        const isCancel = st.moveMode && st.moveMode.actionId === item.id;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn small action-btn';
+        btn.textContent = isCancel ? '取消移动子' : item.label + (item.cost ? '（' + item.cost + ' 能量）' : '');
+        btn.disabled = !isCancel && (!item.available || st.ended);
+        if (item.hint) btn.title = item.hint;
+        btn.addEventListener('click', () => {
+          const res = engine.runAction(st.turn, item.id);
+          if (!res.ok) this.onToast(res.error);
+          this.render();
+        });
+        bar.appendChild(btn);
+      }
+      const hint = document.createElement('div');
+      hint.className = 'action-hint';
+      const unavailable = list.find((i) => !i.available && !st.moveMode);
+      hint.textContent = st.ended ? '' : (unavailable ? unavailable.hint : '');
+      bar.appendChild(hint);
+
+      const resign = document.createElement('button');
+      resign.type = 'button';
+      resign.className = 'btn small danger';
+      resign.textContent = '认输';
+      resign.disabled = st.ended;
+      resign.addEventListener('click', () => {
+        if (!window.confirm('确定认输吗？')) return;
+        const res = engine.runAction(st.turn, 'resign');
+        if (!res.ok) this.onToast(res.error);
+        this.render();
+      });
+      bar.appendChild(resign);
+    }
+
+    renderLog() {
+      const list = this.dom.logList;
+      list.innerHTML = '';
+      const st = this.engine.state;
+      for (const item of st.log.slice(-24).reverse()) {
+        const li = document.createElement('li');
+        li.className = item.kind;
+        li.textContent = item.text;
+        list.appendChild(li);
+      }
+    }
+
+    renderOverlay() {
+      const st = this.engine.state;
+      const ov = this.dom.overlay;
+      if (!st.ended) { ov.classList.add('hidden'); return; }
+      ov.classList.remove('hidden');
+      this.dom.resultText.textContent = st.winner ? B.colorName(st.winner) + '方胜' : '平局';
+      this.dom.resultReason.textContent = st.winReason;
+    }
+  }
+
+  function kv(label, value) {
+    const row = document.createElement('div');
+    row.className = 'kv';
+    const a = document.createElement('span');
+    a.textContent = label;
+    const b = document.createElement('b');
+    b.textContent = value;
+    row.appendChild(a); row.appendChild(b);
+    return row;
+  }
+
+  GVR.GameView = GameView;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/* ---- src/main.js ---- */
+/* 应用主流程：配置页 ⇄ 对局页、配置持久化、导入导出 */
+(function (root) {
+  'use strict';
+  const GVR = root.GVR;
+  const Settings = GVR.Settings;
+  const Config = GVR.Config;
+
+  const LS_CONFIG = 'gvg3.config';
+  const LS_TPL = 'gvg3.template';
+
+  let configText = '';
+  let doc = null;
+  let engine = null;
+  let gameView = null;
+  let activeTemplateKey = null;
+  let toastTimer = null;
+  let parseTimer = null;
+
+  const $ = (id) => document.getElementById(id);
+
+  function boot() {
+    gameView = new GVR.GameView({
+      board: $('board'),
+      statusText: $('statusText'),
+      blackPanel: $('blackPanel'),
+      whitePanel: $('whitePanel'),
+      actionBar: $('actionBar'),
+      logList: $('logList'),
+      overlay: $('overlay'),
+      resultText: $('resultText'),
+      resultReason: $('resultReason')
+    }, { onToast: toast });
+
+    const savedKey = localStorage.getItem(LS_TPL);
+    if (savedKey && GVR.TEMPLATES.some((t) => t.key === savedKey)) activeTemplateKey = savedKey;
+    const savedText = localStorage.getItem(LS_CONFIG);
+
+    if (savedText && savedText.trim()) {
+      if (!activeTemplateKey) activeTemplateKey = null;
+      applyText(savedText, { persist: false });
+    } else {
+      activeTemplateKey = activeTemplateKey || 'mix-energy';
+      applyText(GVR.getTemplate(activeTemplateKey).text, { persist: false });
+    }
+    renderTemplates();
+
+    $('startBtn').addEventListener('click', startGame);
+    $('restartBtn').addEventListener('click', restart);
+    $('againBtn').addEventListener('click', restart);
+    $('backBtn').addEventListener('click', showSetup);
+    $('overlayBackBtn').addEventListener('click', showSetup);
+    $('resetBtn').addEventListener('click', () => {
+      activeTemplateKey = 'mix-energy';
+      localStorage.setItem(LS_TPL, activeTemplateKey);
+      applyText(GVR.getTemplate(activeTemplateKey).text);
+      renderAll();
+      toast('已恢复默认模板（未开局前可继续调整）');
+    });
+    $('importBtn').addEventListener('click', () => $('fileInput').click());
+    $('fileInput').addEventListener('change', onImport);
+    $('exportBtn').addEventListener('click', onExport);
+
+    $('configText').addEventListener('input', (e) => {
+      configText = e.target.value;
+      activeTemplateKey = null;
+      localStorage.removeItem(LS_TPL);
+      clearTimeout(parseTimer);
+      parseTimer = setTimeout(() => {
+        parseNow();
+        renderTemplates();
+      }, 200);
+    });
+
+    window.addEventListener('resize', () => {
+      if (!$('screenGame').classList.contains('hidden') && engine) gameView.resize();
+    });
+
+    showSetup();
+  }
+
+  /* ---------- 配置 ---------- */
+
+  function applyText(text, opts) {
+    opts = opts || {};
+    configText = String(text || '');
+    $('configText').value = configText;
+    if (opts.persist !== false) localStorage.setItem(LS_CONFIG, configText);
+    parseNow();
+  }
+
+  function parseNow() {
+    doc = Config.parse(configText);
+    Settings.renderErrors($('parseErrors'), doc.errors);
+    Settings.renderMods($('modList'), doc, onModChange);
+    Settings.renderEnergyPreview($('energyPreview'), doc);
+    updateHint();
+  }
+
+  function updateHint() {
+    const enabled = GVR.listMods().filter((m) => doc.mods[m.id] && doc.mods[m.id].enabled);
+    const hint = $('setupHint');
+    if (doc.errors.length) {
+      hint.textContent = '配置有 ' + doc.errors.length + ' 处错误，修正后才能开局';
+      hint.style.color = 'var(--danger)';
+      return;
+    }
+    hint.style.color = '';
+    hint.textContent = '配置有效 · ' + doc.boardSize + '×' + doc.boardSize + ' · 已启用 ' +
+      enabled.map((m) => m.label).join('、') + '（共 ' + enabled.length + ' 条规则）';
+    $('startBtn').disabled = false;
+  }
+
+  function renderAll() {
+    parseNow();
+    renderTemplates();
+  }
+
+  function renderTemplates() {
+    GVR.TemplateList.render($('templateList'), activeTemplateKey, (tpl) => {
+      activeTemplateKey = tpl.key;
+      localStorage.setItem(LS_TPL, tpl.key);
+      applyText(tpl.text);
+      renderTemplates();
+      toast('已套用模板：' + tpl.name);
+    });
+  }
+
+  function onModChange(id, key, value) {
+    if (!doc.mods[id]) return;
+    doc.mods[id][key] = value;
+    configText = Config.serialize(doc);
+    $('configText').value = configText;
+    localStorage.setItem(LS_CONFIG, configText);
+    activeTemplateKey = null;
+    localStorage.removeItem(LS_TPL);
+    parseNow();
+    renderTemplates();
+  }
+
+  /* ---------- 对局 ---------- */
+
+  function startGame() {
+    if (doc.errors.length) {
+      toast('配置有 ' + doc.errors.length + ' 处错误，请先修正');
+      $('configText').focus();
+      return;
+    }
+    try {
+      engine = new GVR.Engine(doc);
+      engine.newGame();
+    } catch (e) {
+      toast('开局失败：' + e.message);
+      return;
+    }
+    $('screenSetup').classList.add('hidden');
+    $('screenGame').classList.remove('hidden');
+    gameView.start(engine);
+  }
+
+  function restart() {
+    if (!engine) return;
+    engine.newGame();
+    gameView.render();
+    toast('已重开（使用开局时保存的配置）');
+  }
+
+  function showSetup() {
+    $('screenGame').classList.add('hidden');
+    $('screenSetup').classList.remove('hidden');
+    parseNow();
+  }
+
+  /* ---------- 导入 / 导出 ---------- */
+
+  function onImport(e) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      activeTemplateKey = null;
+      applyText(String(reader.result || ''));
+      renderTemplates();
+      toast('已导入配置：' + file.name);
+    };
+    reader.readAsText(file, 'utf-8');
+    e.target.value = '';
+  }
+
+  function onExport() {
+    const name = '五子棋对围棋-' + (activeTemplateKey || '自定义') + '.rules';
+    const blob = new Blob([configText], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = name;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    toast('已导出 ' + name);
+  }
+
+  /* ---------- Toast ---------- */
+
+  function toast(msg) {
+    const el = $('toast');
+    el.textContent = msg;
+    el.classList.remove('hidden');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.add('hidden'), 2400);
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+</body>
+</html>

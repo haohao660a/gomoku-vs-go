@@ -1,0 +1,282 @@
+/* 五子棋对围棋 - 样式 */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #1a1611;
+  --card: #262019;
+  --card2: #2f2820;
+  --line: #443a2e;
+  --text: #f0e6d6;
+  --dim: #a89880;
+  --accent: #e0a458;
+  --accent2: #c77f3a;
+  --danger: #c0503f;
+  --board: #dfb473;
+  --board-line: #8a6a3c;
+}
+
+body {
+  font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+.hidden { display: none !important; }
+
+/* ---------- 通用 ---------- */
+.btn {
+  background: var(--card2);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 18px;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all .15s;
+}
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+.btn.primary { background: var(--accent2); border-color: var(--accent2); color: #fff; }
+.btn.primary:hover { background: var(--accent); }
+.btn.danger { color: var(--danger); }
+.btn.danger:hover { border-color: var(--danger); background: rgba(192,80,63,.12); }
+.btn.big { padding: 12px 22px; font-size: 16px; border-radius: 10px; }
+.btn.small { padding: 4px 12px; font-size: 13px; }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+
+input {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--text);
+  padding: 10px 14px;
+  font-size: 15px;
+  outline: none;
+  width: 100%;
+}
+input:focus { border-color: var(--accent); }
+
+/* ---------- 首页 ---------- */
+#home {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.home-card {
+  width: 100%;
+  max-width: 460px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 36px 32px;
+}
+.title { font-size: 32px; text-align: center; letter-spacing: 4px; }
+.vs { color: var(--accent); font-size: 22px; }
+.subtitle {
+  text-align: center;
+  color: var(--dim);
+  font-size: 13px;
+  margin: 12px 0 28px;
+}
+.subtitle b { color: var(--accent); }
+
+.field { margin-bottom: 18px; }
+.field label { display: block; font-size: 13px; color: var(--dim); margin-bottom: 6px; }
+.id-row { display: flex; align-items: center; gap: 10px; }
+.pid {
+  flex: 1;
+  font-size: 22px;
+  font-weight: bold;
+  letter-spacing: 6px;
+  color: var(--accent);
+  font-family: Consolas, monospace;
+}
+
+.actions { margin: 26px 0 20px; display: flex; flex-direction: column; gap: 12px; }
+
+/* ---------- 执子方选择 ---------- */
+.side-select { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.side-btn {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--dim);
+  padding: 9px 6px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all .15s;
+}
+.side-btn:hover { border-color: var(--accent); color: var(--text); }
+.side-btn.active {
+  background: rgba(224,164,88,.14);
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: bold;
+}
+.join-row { display: flex; gap: 10px; }
+.join-row input {
+  width: 110px;
+  text-transform: uppercase;
+  text-align: center;
+  font-size: 18px;
+  letter-spacing: 4px;
+  font-family: Consolas, monospace;
+}
+.join-row .btn { flex: 1; }
+
+.rules { border-top: 1px solid var(--line); padding-top: 14px; }
+.rules summary { cursor: pointer; color: var(--dim); font-size: 14px; }
+.rules ul { margin: 10px 0 0 18px; font-size: 13px; color: var(--dim); line-height: 1.9; }
+.rules b { color: var(--text); }
+
+/* ---------- 对局界面 ---------- */
+#game { min-height: 100vh; display: flex; flex-direction: column; }
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 18px;
+  background: var(--card);
+  border-bottom: 1px solid var(--line);
+}
+.room-info { font-size: 15px; display: flex; align-items: center; gap: 10px; }
+.room-info b { color: var(--accent); letter-spacing: 3px; font-family: Consolas, monospace; font-size: 18px; }
+.status { font-size: 15px; color: var(--dim); flex: 1; text-align: center; }
+.status.my-turn { color: var(--accent); font-weight: bold; }
+
+.game-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  padding: 18px;
+  flex-wrap: wrap;
+}
+
+.player-card {
+  width: 190px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 18px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  transition: box-shadow .2s;
+}
+.player-card.active { box-shadow: 0 0 0 2px var(--accent), 0 0 24px rgba(224,164,88,.25); }
+.player-card.offline { opacity: .45; }
+
+.stone-icon { width: 46px; height: 46px; border-radius: 50%; }
+.black-stone { background: radial-gradient(circle at 32% 30%, #666, #111 72%); box-shadow: 0 3px 6px rgba(0,0,0,.5); }
+.white-stone { background: radial-gradient(circle at 32% 30%, #fff, #c9c2b4 78%); box-shadow: 0 3px 6px rgba(0,0,0,.4); }
+
+.pinfo { text-align: center; }
+.pname { font-size: 17px; font-weight: bold; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pname .me-tag { font-size: 12px; color: var(--accent); font-weight: normal; }
+.prule { font-size: 12px; color: var(--dim); margin-top: 4px; }
+.pcap { font-size: 13px; color: var(--dim); }
+.pcap span { color: var(--accent); font-weight: bold; }
+
+/* ---------- 白方能量条 ---------- */
+.energy { width: 100%; }
+.energy-bar {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #1b1611;
+  cursor: not-allowed;
+  transition: border-color .15s, box-shadow .15s;
+}
+.energy-bar.usable { cursor: pointer; border-color: var(--accent); box-shadow: 0 0 10px rgba(224,164,88,.35); }
+.energy-cell {
+  height: 14px;
+  border-radius: 3px;
+  background: #38302a;
+  transition: background .15s;
+}
+.energy-cell.filled {
+  background: linear-gradient(180deg, #ffe0a3, var(--accent) 60%, var(--accent2));
+}
+.energy-bar.usable:hover .energy-cell.filled { filter: brightness(1.15); }
+.energy-bar.spending .energy-cell.filled { animation: energyFlash .5s ease; }
+@keyframes energyFlash { 0% { filter: brightness(2); } 100% { filter: brightness(1); } }
+.energy-tip { font-size: 12px; color: var(--dim); text-align: center; margin-top: 6px; }
+.energy-tip.active { color: var(--accent); font-weight: bold; }
+
+.board-wrap { position: relative; }
+#board {
+  display: block;
+  border-radius: 10px;
+  box-shadow: 0 10px 40px rgba(0,0,0,.55);
+  cursor: crosshair;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(20, 15, 10, .72);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.overlay-card {
+  background: var(--card);
+  border: 1px solid var(--accent);
+  border-radius: 14px;
+  padding: 30px 40px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.result-text { font-size: 24px; font-weight: bold; color: var(--accent); }
+
+.bottombar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 10px 18px 16px;
+}
+.hint { font-size: 13px; color: var(--dim); }
+.swap-prompt { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--accent); }
+
+/* ---------- Toast ---------- */
+.toast {
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--card2);
+  border: 1px solid var(--accent);
+  color: var(--text);
+  padding: 10px 22px;
+  border-radius: 10px;
+  font-size: 14px;
+  z-index: 99;
+  box-shadow: 0 6px 24px rgba(0,0,0,.5);
+  animation: toastIn .2s ease;
+}
+@keyframes toastIn { from { opacity: 0; transform: translate(-50%, -8px); } to { opacity: 1; transform: translate(-50%, 0); } }
+
+/* ---------- 移动端适配 ---------- */
+@media (max-width: 900px) {
+  .game-main { flex-direction: column; gap: 12px; }
+  .player-card { width: 100%; max-width: 520px; flex-direction: row; flex-wrap: wrap; padding: 10px 14px; }
+  .stone-icon { width: 32px; height: 32px; }
+  .pinfo { text-align: left; flex: 1; }
+  .energy { flex-basis: 100%; }
+  .topbar { flex-wrap: wrap; }
+  .status { order: 3; flex-basis: 100%; }
+}

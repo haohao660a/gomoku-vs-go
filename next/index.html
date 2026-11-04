@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>五子棋对围棋 · 规则模块版</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- ========== 设置页 ========== -->
+<div id="screenSetup" class="screen">
+  <header class="hero">
+    <div class="hero-title">五子棋 <span class="vs">对</span> 围棋</div>
+    <div class="hero-sub">规则即模块 · 纯配置（规则 + 参数）· 本地双人</div>
+  </header>
+
+  <main class="setup-grid">
+    <section class="panel panel-templates">
+      <h2>规则模板</h2>
+      <p class="note">选模板即载入一份配置；配置也可导入/导出为纯文本。</p>
+      <div id="templateList" class="template-list"></div>
+      <p class="note tpl-extend">扩展模板：在 <code>next/templates/</code> 新增一个 <code>.js</code>（调用 <code>GVR.registerTemplate</code>），
+        在 <code>index.html</code> 引入后 <code>npm run build:single</code> 会自动内联。</p>
+    </section>
+
+    <section class="panel panel-preview">
+      <h2>能量条实时预览</h2>
+      <p class="note">随「能量」规则的开关、归属方与参数联动。</p>
+      <div id="energyPreview" class="preview"></div>
+      <div class="legend">
+        <span><i class="dot black"></i>黑方</span>
+        <span><i class="dot white"></i>白方</span>
+      </div>
+    </section>
+
+    <section class="panel panel-mods">
+      <h2>规则设置</h2>
+      <p class="note">每条规则一个模组：开关 / 归属方 / 参数。修改<b>立即写入配置</b>，<b>开局或点击「重开」后生效</b>。</p>
+      <div id="modList" class="mod-list"></div>
+    </section>
+
+    <section class="panel panel-config">
+      <h2>配置文本</h2>
+      <p class="note">纯文本只描述规则与参数，不含语句；编辑后自动重新解析。</p>
+      <div class="rule-tools">
+        <button id="importBtn" type="button" class="btn small">导入配置</button>
+        <input type="file" id="fileInput" accept=".rules,.txt,.cfg,.json,.rule" hidden>
+        <button id="exportBtn" type="button" class="btn small">导出文本</button>
+        <button id="resetBtn" type="button" class="btn small">恢复默认模板</button>
+      </div>
+      <textarea id="configText" spellcheck="false" autocomplete="off"></textarea>
+      <div id="parseErrors" class="errors hidden"></div>
+      <details class="cfg-help">
+        <summary>配置格式速查</summary>
+        <pre>board = 15
+mod chain on owner=双方 n=5 dirs=横竖斜 mode=至少
+mod go on owner=双方 suicide=禁入
+mod energy on owner=白 init=0 min=0 max=10
+mod gain on owner=白 amount=1
+mod combo on owner=白 cost=5 extra=1 perTurn=1
+mod move on owner=白 cost=3
+mod win on owner=双方 captureTarget=0
+
+# 取值：owner=双方|黑|白；dirs=横竖斜|仅横竖|仅斜线
+# mode=至少|恰好；suicide=禁入|允许；off 表示关闭该规则</pre>
+      </details>
+    </section>
+  </main>
+
+  <footer class="setup-footer">
+    <div id="setupHint" class="hint"></div>
+    <button id="startBtn" type="button" class="btn primary big" disabled>开始对局（本地双人）</button>
+  </footer>
+</div>
+
+<!-- ========== 对局页 ========== -->
+<div id="screenGame" class="screen hidden">
+  <header class="topbar">
+    <button id="backBtn" type="button" class="btn small">← 设置</button>
+    <div id="statusText" class="status"></div>
+    <button id="restartBtn" type="button" class="btn small">重开</button>
+  </header>
+
+  <main class="game-main">
+    <aside id="blackPanel" class="side-panel black"></aside>
+    <div class="board-wrap">
+      <canvas id="board"></canvas>
+      <div id="overlay" class="overlay hidden">
+        <div class="overlay-card">
+          <div id="resultText" class="result-text"></div>
+          <div id="resultReason" class="result-reason"></div>
+          <div class="overlay-actions">
+            <button id="againBtn" type="button" class="btn primary">再来一局</button>
+            <button id="overlayBackBtn" type="button" class="btn">返回设置</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <aside id="whitePanel" class="side-panel white"></aside>
+  </main>
+
+  <section class="action-bar">
+    <div class="action-bar-label">当前方动作</div>
+    <div id="actionBar" class="action-bar-btns"></div>
+  </section>
+
+  <section class="log-panel">
+    <div class="log-title">规则日志</div>
+    <ul id="logList" class="log-list"></ul>
+  </section>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script src="src/core/board.js"></script>
+<script src="src/core/state.js"></script>
+<script src="src/core/bus.js"></script>
+<script src="src/core/registry.js"></script>
+<script src="src/core/config.js"></script>
+<script src="src/core/arbiter.js"></script>
+<script src="src/mods/chain/index.js"></script>
+<script src="src/mods/go/index.js"></script>
+<script src="src/mods/energy/index.js"></script>
+<script src="src/mods/gain/index.js"></script>
+<script src="src/mods/combo/index.js"></script>
+<script src="src/mods/move/index.js"></script>
+<script src="src/mods/win/index.js"></script>
+<script src="templates/index.js"></script>
+<script src="src/core/engine.js"></script>
+<script src="src/ui/board.js"></script>
+<script src="src/ui/energy.js"></script>
+<script src="src/ui/templates.js"></script>
+<script src="src/ui/settings.js"></script>
+<script src="src/ui/game.js"></script>
+<script src="src/main.js"></script>
+</body>
+</html>
