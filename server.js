@@ -96,6 +96,22 @@ function scheduleGC(room) {
   }, 10 * 60 * 1000); // 双方离线 10 分钟后回收房间
 }
 
+function slotKey(color) {
+  return color === G.BLACK ? 'black' : 'white';
+}
+
+/**
+ * 按偏好选择空位：side 为 'black' | 'white' | 'auto'。
+ * 偏好位置已被占则退回剩余空位；两个位置都满返回 null。
+ */
+function chooseSlot(room, side) {
+  const wanted = side === 'black' ? G.BLACK : side === 'white' ? G.WHITE : null;
+  if (wanted && !room.players[slotKey(wanted)]) return wanted;
+  if (!room.players.black) return G.BLACK;
+  if (!room.players.white) return G.WHITE;
+  return null;
+}
+
 // 玩家离开当前房间（主动 leave 或开新房间前调用）
 function leaveCurrentRoom(socket, silent) {
   const roomId = socket.data.roomId;
@@ -118,25 +134,26 @@ function leaveCurrentRoom(socket, silent) {
 
 io.on('connection', (socket) => {
 
-  // 创建房间：创建者执黑（五子棋方）
-  socket.on('create', ({ name, pid }, cb) => {
+  // 创建房间：按所选执子方入座（默认黑方/五子棋方）
+  socket.on('create', ({ name, pid, side }, cb) => {
     name = String(name || '').trim().slice(0, 16);
     pid = String(pid || '').trim().slice(0, 16);
     if (!name || !pid) return cb && cb({ ok: false, error: '昵称与ID不能为空' });
     leaveCurrentRoom(socket);
     const id = genRoomId();
     const room = newRoomState(id);
-    room.players.black = { pid, name, socketId: socket.id, online: true };
+    const color = chooseSlot(room, side) || G.BLACK;
+    room.players[slotKey(color)] = { pid, name, socketId: socket.id, online: true };
     rooms.set(id, room);
     socket.join(id);
     socket.data.roomId = id;
     socket.data.pid = pid;
-    cb && cb({ ok: true, roomId: id, color: G.BLACK });
+    cb && cb({ ok: true, roomId: id, color });
     broadcastState(room);
   });
 
-  // 加入房间：加入者执白（围棋方）；同 pid 断线可重连回原位置
-  socket.on('join', ({ roomId, name, pid }, cb) => {
+  // 加入房间：优先按所选执子方入座，偏好位置被占则取剩余空位；同 pid 断线可重连回原位置
+  socket.on('join', ({ roomId, name, pid, side }, cb) => {
     roomId = String(roomId || '').trim().toUpperCase();
     name = String(name || '').trim().slice(0, 16);
     pid = String(pid || '').trim().slice(0, 16);
@@ -160,14 +177,15 @@ io.on('connection', (socket) => {
       cb && cb({ ok: true, roomId, color: existingColor, rejoin: true });
       return broadcastState(room);
     }
-    if (room.players.white) return cb && cb({ ok: false, error: '房间已满' });
+    const color = chooseSlot(room, side);
+    if (!color) return cb && cb({ ok: false, error: '房间已满' });
 
-    room.players.white = { pid, name, socketId: socket.id, online: true };
-    room.started = true;
+    room.players[slotKey(color)] = { pid, name, socketId: socket.id, online: true };
+    room.started = !!(room.players.black && room.players.white);
     clearTimeout(room.gcTimer);
     socket.join(roomId);
     socket.data.roomId = roomId;
-    cb && cb({ ok: true, roomId, color: G.WHITE });
+    cb && cb({ ok: true, roomId, color, switched: side && side !== 'auto' && color !== (side === 'black' ? G.BLACK : G.WHITE) });
     broadcastState(room);
   });
 

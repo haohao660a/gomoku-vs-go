@@ -9,7 +9,9 @@ const LS = {
   get name() { return localStorage.getItem('gvg_name') || ''; },
   set name(v) { localStorage.setItem('gvg_name', v); },
   get room() { return localStorage.getItem('gvg_room') || ''; },
-  set room(v) { v ? localStorage.setItem('gvg_room', v) : localStorage.removeItem('gvg_room'); }
+  set room(v) { v ? localStorage.setItem('gvg_room', v) : localStorage.removeItem('gvg_room'); },
+  get side() { return localStorage.getItem('gvg_side') || 'auto'; },
+  set side(v) { localStorage.setItem('gvg_side', v); }
 };
 
 if (!LS.pid) LS.pid = String(Math.floor(100000 + Math.random() * 900000)); // 6位ID
@@ -89,15 +91,29 @@ function requireName() {
   return name;
 }
 
+// ---------- 执子方偏好 ----------
+let preferredSide = ['auto', 'black', 'white'].includes(LS.side) ? LS.side : 'auto';
+function setPreferredSide(side) {
+  preferredSide = side;
+  LS.side = side;
+  document.querySelectorAll('#sideSelect .side-btn').forEach((b) => {
+    b.classList.toggle('active', b.dataset.side === side);
+  });
+}
+document.querySelectorAll('#sideSelect .side-btn').forEach((b) => {
+  b.addEventListener('click', () => setPreferredSide(b.dataset.side));
+});
+setPreferredSide(preferredSide);
+
 $('createBtn').onclick = () => {
   const name = requireName();
   if (!name) return;
-  socket.emit('create', { name, pid: LS.pid }, (res) => {
+  socket.emit('create', { name, pid: LS.pid, side: preferredSide }, (res) => {
     if (!res.ok) return toast(res.error);
     myColor = res.color;
     LS.room = res.roomId;
     showGame();
-    toast('房间已创建，等待对手加入');
+    toast(`房间已创建，你执${res.color === BLACK ? '黑（五子棋）' : '白（围棋）'}，等待对手加入`);
   });
 };
 
@@ -106,11 +122,13 @@ $('joinBtn').onclick = () => {
   if (!name) return;
   const roomId = roomInput.value.trim().toUpperCase();
   if (roomId.length !== 4) return toast('请输入 4 位房间码');
-  socket.emit('join', { roomId, name, pid: LS.pid }, (res) => {
+  socket.emit('join', { roomId, name, pid: LS.pid, side: preferredSide }, (res) => {
     if (!res.ok) return toast(res.error);
     myColor = res.color;
     LS.room = res.roomId;
     showGame();
+    if (res.switched) toast(`所选位置已被占用，你改执${res.color === BLACK ? '黑（五子棋）' : '白（围棋）'}`);
+    else toast(`你执${res.color === BLACK ? '黑（五子棋）' : '白（围棋）'}`);
   });
 };
 

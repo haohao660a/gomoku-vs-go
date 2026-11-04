@@ -95,6 +95,26 @@ input:focus { border-color: var(--accent); }
 }
 
 .actions { margin: 26px 0 20px; display: flex; flex-direction: column; gap: 12px; }
+
+/* ---------- 执子方选择 ---------- */
+.side-select { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.side-btn {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--dim);
+  padding: 9px 6px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all .15s;
+}
+.side-btn:hover { border-color: var(--accent); color: var(--text); }
+.side-btn.active {
+  background: rgba(224,164,88,.14);
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: bold;
+}
 .join-row { display: flex; gap: 10px; }
 .join-row input {
   width: 110px;

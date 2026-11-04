@@ -26,11 +26,20 @@
       </div>
     </div>
 
+    <div class="field">
+      <label>执子方（自动 = 哪个位置空就坐哪个）</label>
+      <div class="side-select" id="sideSelect">
+        <button type="button" class="side-btn active" data-side="auto">自动</button>
+        <button type="button" class="side-btn" data-side="black">执黑 · 五子棋</button>
+        <button type="button" class="side-btn" data-side="white">执白 · 围棋</button>
+      </div>
+    </div>
+
     <div class="actions">
-      <button id="createBtn" class="btn primary big">创建房间（执黑·五子棋）</button>
+      <button id="createBtn" class="btn primary big">创建房间</button>
       <div class="join-row">
         <input id="roomInput" maxlength="4" placeholder="房间码" autocomplete="off">
-        <button id="joinBtn" class="btn big">加入房间（执白·围棋）</button>
+        <button id="joinBtn" class="btn big">加入房间</button>
       </div>
     </div>
 
@@ -38,6 +47,7 @@
       <summary>玩法规则</summary>
       <ul>
         <li>共用 15×15 棋盘，双方轮流落子，黑方先行。</li>
+        <li>创建/加入房间时可选择执黑或执白（选「自动」则坐剩余空位）；黑方固定执五子棋，白方固定执围棋。</li>
         <li><b>黑方（五子棋）</b>：任意方向连成 5 子即获胜。</li>
         <li><b>白方（围棋）</b>：按围棋规则包围提掉黑子，累计提掉 <b>10</b> 子（目）即获胜。</li>
         <li>双方棋子均遵循「气」规则：落子使对方棋块无气则被提走；落子后己方棋块无气且未提子为禁着点。</li>
