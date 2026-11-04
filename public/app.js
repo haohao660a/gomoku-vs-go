@@ -270,6 +270,63 @@ board.addEventListener('click', (e) => {
   socket.emit('move', c, (res) => { if (!res.ok) toast(res.error); });
 });
 
+// ---------- 白方能量条 ----------
+let energyCellsBuilt = false;
+function buildEnergyCells() {
+  const bar = $('energyBar');
+  bar.innerHTML = '';
+  for (let i = 0; i < 10; i++) {
+    const c = document.createElement('div');
+    c.className = 'energy-cell';
+    bar.appendChild(c);
+  }
+  energyCellsBuilt = true;
+}
+
+$('energyBar').addEventListener('click', () => {
+  if (!state || !canUseEnergy()) {
+    if (!state || state.winner) return;
+    if (myColor !== WHITE) return toast('只有白方可以充能使用能量');
+    if (state.turn !== WHITE) return toast('还没轮到你');
+    if (state.energy < state.energyCost) return toast(`能量不足（需 ${state.energyCost} 格）`);
+    if (state.extraUsed) return toast('本回合已使用过额外落子');
+    return;
+  }
+  socket.emit('useEnergy', (res) => {
+    if (!res.ok) return toast(res.error);
+    const bar = $('energyBar');
+    bar.classList.add('spending');
+    setTimeout(() => bar.classList.remove('spending'), 500);
+    toast(`消耗 ${state.energyCost} 格能量，获得一次额外落子`);
+  });
+});
+
+function canUseEnergy() {
+  return !!state && state.started && !state.winner && myColor === WHITE &&
+    state.turn === WHITE && state.energy >= state.energyCost && !state.extraUsed;
+}
+
+function renderEnergy() {
+  if (!energyCellsBuilt) buildEnergyCells();
+  if (!state) return;
+  const max = state.energyMax || 10;
+  const bar = $('energyBar');
+  const cells = bar.querySelectorAll('.energy-cell');
+  cells.forEach((c, i) => c.classList.toggle('filled', i < state.energy));
+
+  const usable = canUseEnergy();
+  bar.classList.toggle('usable', usable);
+  const tip = $('energyTip');
+  let text = `能量 ${state.energy}/${max}`;
+  if (myColor === WHITE && state.turn === WHITE) {
+    if (state.extraMoves > 0) text += ' · 额外落子待用';
+    else if (state.extraUsed) text += ' · 本回合已使用';
+    else if (state.energy >= state.energyCost) text += ` · 点击消耗 ${state.energyCost} 格`;
+  }
+  tip.textContent = text;
+  tip.classList.toggle('active', usable || (myColor === WHITE && state.extraMoves > 0));
+}
+
 // ---------- 渲染状态面板 ----------
 function renderAll() {
   if (!state) return;
@@ -305,9 +362,16 @@ function renderAll() {
     status.className = 'status';
   } else {
     const mine = state.turn === myColor;
-    status.textContent = mine ? '轮到你了' : '对手思考中…';
+    let txt = mine ? '轮到你了' : '对手思考中…';
+    if (mine && myColor === WHITE && state.extraMoves > 0) txt += '（额外落子）';
+    else if (mine && myColor === WHITE && state.energy >= state.energyCost && !state.extraUsed) {
+      txt += `（可消耗 ${state.energyCost} 格能量追加一手）`;
+    }
+    status.textContent = txt;
     status.className = 'status' + (mine ? ' my-turn' : '');
   }
+
+  renderEnergy();
 
   // 结束覆盖层
   const overlay = $('overlay');

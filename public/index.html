@@ -42,6 +42,7 @@
         <li><b>白方（围棋）</b>：按围棋规则包围提掉黑子，累计提掉 <b>10</b> 子（目）即获胜。</li>
         <li>双方棋子均遵循「气」规则：落子使对方棋块无气则被提走；落子后己方棋块无气且未提子为禁着点。</li>
         <li>黑方也可围提白子（不计胜负，仅作棋盘控制）；白方提子进度显示在对局面板。</li>
+        <li><b>白方能量条（10 格）</b>：每落一子 +1 格；白方连成五子 +5 格；点击能量条消耗 5 格可获得一次额外落子（同一回合限一次）。</li>
       </ul>
     </details>
   </div>
@@ -86,6 +87,10 @@
         <div class="prule">围棋 · 提 <span id="targetText">10</span> 目胜</div>
       </div>
       <div class="pcap"><span id="whiteCap">0</span>/<span id="whiteTarget">10</span> 目</div>
+      <div class="energy">
+        <div id="energyBar" class="energy-bar" title="点击消耗 5 格能量，获得一次额外落子（每回合限一次）"></div>
+        <div id="energyTip" class="energy-tip">能量 0/10</div>
+      </div>
     </div>
   </main>
 

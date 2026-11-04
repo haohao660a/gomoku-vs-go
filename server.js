@@ -43,6 +43,9 @@ function newRoomState(id) {
     lastMove: null,
     capturesByWhite: 0,
     capturesByBlack: 0,
+    energy: 0,        // 白方能量（格）
+    extraMoves: 0,    // 白方待用的额外落子次数
+    extraUsed: false, // 本回合是否已用过能量
     started: false,
     players: { black: null, white: null },
     rematch: new Set(),
@@ -60,6 +63,11 @@ function publicState(room) {
     lastMove: room.lastMove,
     capturesByWhite: room.capturesByWhite,
     capturesByBlack: room.capturesByBlack,
+    energy: room.energy,
+    extraMoves: room.extraMoves,
+    extraUsed: room.extraUsed,
+    energyMax: G.ENERGY_MAX,
+    energyCost: G.ENERGY_COST,
     started: room.started,
     target: G.CAPTURE_TARGET,
     rematch: [...room.rematch],
@@ -173,6 +181,19 @@ io.on('connection', (socket) => {
     const res = G.applyMove(room, color, x | 0, y | 0);
     if (!res.ok) return cb && cb(res);
     room.rematch.clear();
+    cb && cb({ ok: true });
+    broadcastState(room);
+  });
+
+  // 白方消耗能量获得额外落子
+  socket.on('useEnergy', (cb) => {
+    const room = rooms.get(socket.data.roomId);
+    if (!room) return cb && cb({ ok: false, error: '不在房间中' });
+    if (!room.started) return cb && cb({ ok: false, error: '等待对手加入' });
+    const color = colorOf(room, socket.data.pid);
+    if (!color) return cb && cb({ ok: false, error: '你不是对局玩家' });
+    const res = G.useEnergy(room, color);
+    if (!res.ok) return cb && cb(res);
     cb && cb({ ok: true });
     broadcastState(room);
   });

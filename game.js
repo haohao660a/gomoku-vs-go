@@ -6,6 +6,12 @@ const SIZE = 15;
 const EMPTY = 0, BLACK = 1, WHITE = 2;
 const CAPTURE_TARGET = 10; // 白方获胜所需提掉的黑子数（目）
 
+// 白方能量系统：共 10 格
+const ENERGY_MAX = 10;          // 能量上限（格数）
+const ENERGY_COST = 5;          // 使用一次额外落子的消耗
+const ENERGY_PER_MOVE = 1;      // 白方每落一子获得的能量
+const ENERGY_PER_FIVE = 5;      // 白方连成五子额外获得的能量
+
 function createBoard() {
   return Array.from({ length: SIZE }, () => Array(SIZE).fill(EMPTY));
 }
@@ -105,6 +111,16 @@ function applyMove(state, color, x, y) {
   if (color === WHITE) state.capturesByWhite += captured.length;
   else state.capturesByBlack += captured.length;
 
+  // 白方能量累积：每落一子 +1，连成五子再 +5
+  let fiveBonus = false;
+  if (color === WHITE) {
+    state.energy = Math.min(ENERGY_MAX, (state.energy || 0) + ENERGY_PER_MOVE);
+    if (checkFive(board, x, y, WHITE)) {
+      fiveBonus = true;
+      state.energy = Math.min(ENERGY_MAX, state.energy + ENERGY_PER_FIVE);
+    }
+  }
+
   // 胜负判定
   let winLine = null;
   if (color === BLACK) {
@@ -117,9 +133,41 @@ function applyMove(state, color, x, y) {
     state.winner = WHITE;
   }
 
-  if (!state.winner) state.turn = opp;
+  if (!state.winner) {
+    if (color === WHITE && (state.extraMoves || 0) > 0) {
+      // 消耗一次额外落子，本回合继续由白方下
+      state.extraMoves -= 1;
+      state.turn = WHITE;
+    } else {
+      state.turn = opp;
+      if (state.turn === WHITE) {
+        // 新的白方回合：重置每回合限一次的使用状态
+        state.extraUsed = false;
+        state.extraMoves = 0;
+      }
+    }
+  }
   state.lastMove = { x, y };
-  return { ok: true, captured, winLine };
+  return { ok: true, captured, winLine, fiveBonus };
 }
 
-module.exports = { SIZE, EMPTY, BLACK, WHITE, CAPTURE_TARGET, createBoard, applyMove, opponent };
+/**
+ * 白方消耗 5 格能量获得一次额外落子。每回合（白方一次行动）限一次。
+ */
+function useEnergy(state, color) {
+  if (color !== WHITE) return { ok: false, error: '只有白方可以使用能量' };
+  if (state.winner) return { ok: false, error: '对局已结束' };
+  if (state.turn !== WHITE) return { ok: false, error: '还没轮到你' };
+  if ((state.energy || 0) < ENERGY_COST) return { ok: false, error: `能量不足（需 ${ENERGY_COST} 格）` };
+  if (state.extraUsed) return { ok: false, error: '本回合已使用过额外落子' };
+  state.energy -= ENERGY_COST;
+  state.extraUsed = true;
+  state.extraMoves = (state.extraMoves || 0) + 1;
+  return { ok: true };
+}
+
+module.exports = {
+  SIZE, EMPTY, BLACK, WHITE, CAPTURE_TARGET,
+  ENERGY_MAX, ENERGY_COST, ENERGY_PER_MOVE, ENERGY_PER_FIVE,
+  createBoard, applyMove, useEnergy, opponent
+};

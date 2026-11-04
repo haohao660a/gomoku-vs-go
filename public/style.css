@@ -164,6 +164,35 @@ input:focus { border-color: var(--accent); }
 .pcap { font-size: 13px; color: var(--dim); }
 .pcap span { color: var(--accent); font-weight: bold; }
 
+/* ---------- 白方能量条 ---------- */
+.energy { width: 100%; }
+.energy-bar {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #1b1611;
+  cursor: not-allowed;
+  transition: border-color .15s, box-shadow .15s;
+}
+.energy-bar.usable { cursor: pointer; border-color: var(--accent); box-shadow: 0 0 10px rgba(224,164,88,.35); }
+.energy-cell {
+  height: 14px;
+  border-radius: 3px;
+  background: #38302a;
+  transition: background .15s;
+}
+.energy-cell.filled {
+  background: linear-gradient(180deg, #ffe0a3, var(--accent) 60%, var(--accent2));
+}
+.energy-bar.usable:hover .energy-cell.filled { filter: brightness(1.15); }
+.energy-bar.spending .energy-cell.filled { animation: energyFlash .5s ease; }
+@keyframes energyFlash { 0% { filter: brightness(2); } 100% { filter: brightness(1); } }
+.energy-tip { font-size: 12px; color: var(--dim); text-align: center; margin-top: 6px; }
+.energy-tip.active { color: var(--accent); font-weight: bold; }
+
 .board-wrap { position: relative; }
 #board {
   display: block;
@@ -223,9 +252,10 @@ input:focus { border-color: var(--accent); }
 /* ---------- 移动端适配 ---------- */
 @media (max-width: 900px) {
   .game-main { flex-direction: column; gap: 12px; }
-  .player-card { width: 100%; max-width: 520px; flex-direction: row; padding: 10px 14px; }
+  .player-card { width: 100%; max-width: 520px; flex-direction: row; flex-wrap: wrap; padding: 10px 14px; }
   .stone-icon { width: 32px; height: 32px; }
   .pinfo { text-align: left; flex: 1; }
+  .energy { flex-basis: 100%; }
   .topbar { flex-wrap: wrap; }
   .status { order: 3; flex-basis: 100%; }
 }
