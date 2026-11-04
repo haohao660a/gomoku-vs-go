@@ -1,0 +1,14 @@
+{
+  "type": "Program",
+  "id": "Program.Web.GomokuVsGo",
+  "name": "五子棋对围棋",
+  "tags": [
+    "游戏"
+  ],
+  "state": "推进",
+  "created_time": "20261104161630",
+  "description": "五子棋对围棋 - 双人联机对战网页程序：黑方执五子棋（连五胜），白方执围棋（提10目胜）；前后端全栈，Express + Socket.io，昵称+ID免注册，房间码邀请制。",
+  "cover": "",
+  "ioc": "",
+  "show": []
+}

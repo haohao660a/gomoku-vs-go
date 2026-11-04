@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>五子棋对围棋</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ========== 首页：身份与房间 ========== -->
+<div id="home" class="screen">
+  <div class="home-card">
+    <h1 class="title">五子棋 <span class="vs">对</span> 围棋</h1>
+    <p class="subtitle">黑方执五子棋 · 连五即胜 &nbsp;|&nbsp; 白方执围棋 · 提 <b>10</b> 目即胜</p>
+
+    <div class="field">
+      <label>你的昵称</label>
+      <input id="nameInput" maxlength="16" placeholder="输入昵称" autocomplete="off">
+    </div>
+    <div class="field">
+      <label>你的 ID（自动生成，本机唯一）</label>
+      <div class="id-row">
+        <span id="pidText" class="pid"></span>
+        <button id="copyPidBtn" class="btn small">复制</button>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button id="createBtn" class="btn primary big">创建房间（执黑·五子棋）</button>
+      <div class="join-row">
+        <input id="roomInput" maxlength="4" placeholder="房间码" autocomplete="off">
+        <button id="joinBtn" class="btn big">加入房间（执白·围棋）</button>
+      </div>
+    </div>
+
+    <details class="rules">
+      <summary>玩法规则</summary>
+      <ul>
+        <li>共用 15×15 棋盘，双方轮流落子，黑方先行。</li>
+        <li><b>黑方（五子棋）</b>：任意方向连成 5 子即获胜。</li>
+        <li><b>白方（围棋）</b>：按围棋规则包围提掉黑子，累计提掉 <b>10</b> 子（目）即获胜。</li>
+        <li>双方棋子均遵循「气」规则：落子使对方棋块无气则被提走；落子后己方棋块无气且未提子为禁着点。</li>
+        <li>黑方也可围提白子（不计胜负，仅作棋盘控制）；白方提子进度显示在对局面板。</li>
+      </ul>
+    </details>
+  </div>
+</div>
+
+<!-- ========== 对局界面 ========== -->
+<div id="game" class="screen hidden">
+  <header class="topbar">
+    <div class="room-info">
+      房间 <b id="roomCode">----</b>
+      <button id="copyRoomBtn" class="btn small">复制邀请</button>
+    </div>
+    <div id="statusText" class="status">等待对手加入…</div>
+    <button id="leaveBtn" class="btn small danger">离开</button>
+  </header>
+
+  <main class="game-main">
+    <div id="blackCard" class="player-card black">
+      <div class="stone-icon black-stone"></div>
+      <div class="pinfo">
+        <div class="pname">虚位以待</div>
+        <div class="prule">五子棋 · 连五胜</div>
+      </div>
+      <div class="pcap" title="黑方提掉的白子数">提 <span id="blackCap">0</span></div>
+    </div>
+
+    <div class="board-wrap">
+      <canvas id="board"></canvas>
+      <div id="overlay" class="overlay hidden">
+        <div class="overlay-card">
+          <div id="resultText" class="result-text"></div>
+          <button id="rematchBtn" class="btn primary">再来一局</button>
+          <button id="overlayLeaveBtn" class="btn">返回首页</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="whiteCard" class="player-card white">
+      <div class="stone-icon white-stone"></div>
+      <div class="pinfo">
+        <div class="pname">虚位以待</div>
+        <div class="prule">围棋 · 提 <span id="targetText">10</span> 目胜</div>
+      </div>
+      <div class="pcap"><span id="whiteCap">0</span>/<span id="whiteTarget">10</span> 目</div>
+    </div>
+  </main>
+
+  <footer class="bottombar">
+    <button id="resignBtn" class="btn small danger">认输</button>
+    <span id="hintText" class="hint">点击棋盘交叉点落子</span>
+  </footer>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
