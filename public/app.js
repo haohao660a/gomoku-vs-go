@@ -162,6 +162,29 @@ $('rematchBtn').onclick = () => {
   });
 };
 
+// ---------- 对局内交换黑白方 ----------
+$('swapBtn').onclick = () => {
+  if (!state || !state.players.black || !state.players.white) return toast('需要两名玩家才能换边');
+  socket.emit('requestSwap', (res) => {
+    if (!res.ok) return toast(res.error);
+    toast('已发出换边请求，等待对方同意');
+  });
+};
+
+$('acceptSwapBtn').onclick = () => {
+  socket.emit('acceptSwap', (res) => {
+    if (!res.ok) return toast(res.error);
+    toast('已交换黑白方');
+  });
+};
+
+$('declineSwapBtn').onclick = () => {
+  socket.emit('declineSwap', (res) => {
+    if (!res.ok) return toast(res.error);
+    toast('已拒绝换边请求');
+  });
+};
+
 // ---------- 棋盘绘制 ----------
 const SIZE = 15;
 const STARS = [[3, 3], [3, 11], [11, 3], [11, 11], [7, 7]];
@@ -390,6 +413,15 @@ function renderAll() {
   }
 
   renderEnergy();
+
+  // 换边按钮与确认条
+  const swapReq = state.swapRequest;
+  const bothHere = !!(state.players.black && state.players.white);
+  const swapBtn = $('swapBtn');
+  const mineReq = !!swapReq && swapReq.pid === LS.pid;
+  swapBtn.disabled = !bothHere || mineReq;
+  swapBtn.textContent = mineReq ? '已请求换边…' : '交换黑白';
+  $('swapPrompt').classList.toggle('hidden', !(bothHere && swapReq && !mineReq));
 
   // 结束覆盖层
   const overlay = $('overlay');

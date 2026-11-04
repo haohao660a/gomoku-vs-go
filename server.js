@@ -47,6 +47,7 @@ function newRoomState(id) {
     extraMoves: 0,    // 白方待用的额外落子次数
     extraUsed: false, // 本回合是否已用过能量
     started: false,
+    swapRequest: null, // 换边请求 { pid }
     players: { black: null, white: null },
     rematch: new Set(),
     gcTimer: null
@@ -69,6 +70,7 @@ function publicState(room) {
     energyMax: G.ENERGY_MAX,
     energyCost: G.ENERGY_COST,
     started: room.started,
+    swapRequest: room.swapRequest,
     target: G.CAPTURE_TARGET,
     rematch: [...room.rematch],
     players: {
@@ -128,6 +130,7 @@ function leaveCurrentRoom(socket, silent) {
     rooms.delete(roomId);
   } else {
     room.rematch.clear();
+    room.swapRequest = null;
     if (!silent) broadcastState(room);
   }
 }
@@ -212,6 +215,45 @@ io.on('connection', (socket) => {
     if (!color) return cb && cb({ ok: false, error: '你不是对局玩家' });
     const res = G.useEnergy(room, color);
     if (!res.ok) return cb && cb(res);
+    cb && cb({ ok: true });
+    broadcastState(room);
+  });
+
+  // 请求交换黑白方（需对方同意）
+  socket.on('requestSwap', (cb) => {
+    const room = rooms.get(socket.data.roomId);
+    if (!room) return cb && cb({ ok: false, error: '不在房间中' });
+    if (!room.players.black || !room.players.white) return cb && cb({ ok: false, error: '需要两名玩家才能换边' });
+    if (!colorOf(room, socket.data.pid)) return cb && cb({ ok: false, error: '你不是对局玩家' });
+    if (room.swapRequest) return cb && cb({ ok: false, error: '已有待确认的换边请求' });
+    room.swapRequest = { pid: socket.data.pid };
+    cb && cb({ ok: true });
+    broadcastState(room);
+  });
+
+  // 同意换边：交换两个座位（棋盘、提子数、能量随颜色保留，由新执子方接手）
+  socket.on('acceptSwap', (cb) => {
+    const room = rooms.get(socket.data.roomId);
+    if (!room) return cb && cb({ ok: false, error: '不在房间中' });
+    if (!room.swapRequest) return cb && cb({ ok: false, error: '没有待确认的换边请求' });
+    if (room.swapRequest.pid === socket.data.pid) return cb && cb({ ok: false, error: '不能同意自己的换边请求' });
+    if (!colorOf(room, socket.data.pid)) return cb && cb({ ok: false, error: '你不是对局玩家' });
+    const b = room.players.black, w = room.players.white;
+    room.players.black = w;
+    room.players.white = b;
+    room.swapRequest = null;
+    room.rematch.clear();
+    cb && cb({ ok: true });
+    broadcastState(room);
+  });
+
+  // 拒绝换边
+  socket.on('declineSwap', (cb) => {
+    const room = rooms.get(socket.data.roomId);
+    if (!room || !room.swapRequest) return cb && cb({ ok: false, error: '没有待确认的换边请求' });
+    if (room.swapRequest.pid === socket.data.pid) return cb && cb({ ok: false, error: '不能拒绝自己的请求' });
+    if (!colorOf(room, socket.data.pid)) return cb && cb({ ok: false, error: '你不是对局玩家' });
+    room.swapRequest = null;
     cb && cb({ ok: true });
     broadcastState(room);
   });

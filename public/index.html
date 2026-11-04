@@ -48,6 +48,7 @@
       <ul>
         <li>共用 15×15 棋盘，双方轮流落子，黑方先行。</li>
         <li>创建/加入房间时可选择执黑或执白（选「自动」则坐剩余空位）；黑方固定执五子棋，白方固定执围棋。</li>
+        <li>对局内可点「交换黑白」发起换边，须对方同意才生效；棋盘、提子数与能量随颜色保留，由新的执子方接手。</li>
         <li><b>黑方（五子棋）</b>：任意方向连成 5 子即获胜。</li>
         <li><b>白方（围棋）</b>：按围棋规则包围提掉黑子，累计提掉 <b>10</b> 子（目）即获胜。</li>
         <li>双方棋子均遵循「气」规则：落子使对方棋块无气则被提走；落子后己方棋块无气且未提子为禁着点。</li>
@@ -106,6 +107,12 @@
 
   <footer class="bottombar">
     <button id="resignBtn" class="btn small danger">认输</button>
+    <button id="swapBtn" class="btn small">交换黑白</button>
+    <span id="swapPrompt" class="swap-prompt hidden">
+      对方请求交换黑白方
+      <button id="acceptSwapBtn" class="btn small primary">同意</button>
+      <button id="declineSwapBtn" class="btn small">拒绝</button>
+    </span>
     <span id="hintText" class="hint">点击棋盘交叉点落子</span>
   </footer>
 </div>
